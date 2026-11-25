@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="referrer" content="no-referrer" />
+    <link rel="icon" href="data:," />
+    <title>pii-guard · AI에 넣기 전에 개인정보 가리기</title>
+    <link rel="stylesheet" href="./src/style.css" />
+  </head>
+  <body>
+    <header>
+      <h1>pii-guard</h1>
+      <p class="sub">AI에 넣기 전에 개인정보와 시크릿을 찾아 가명으로 바꿉니다. 모든 처리는 이 브라우저 안에서만 일어납니다.</p>
+      <p id="net" class="badge"></p>
+    </header>
+
+    <main>
+      <section aria-labelledby="h-input">
+        <h2 id="h-input">1. 검사할 내용</h2>
+        <div id="drop" class="drop">
+          <textarea id="input" rows="10" spellcheck="false" autocomplete="off" autocapitalize="off"
+            placeholder="여기에 붙여넣거나, 텍스트 파일을 끌어다 놓으세요."></textarea>
+        </div>
+        <div class="row">
+          <label class="file-btn">파일 열기<input id="file" type="file" hidden /></label>
+          <span id="file-msg" class="muted" role="status"></span>
+        </div>
+        <fieldset>
+          <legend>검사 범위</legend>
+          <label><input type="checkbox" name="group" value="personal" checked /> 개인정보</label>
+          <label><input type="checkbox" name="group" value="dev" checked /> 개발·보안</label>
+          <label><input type="checkbox" name="group" value="sensitive" checked /> 민감 주제</label>
+        </fieldset>
+      </section>
+
+      <section aria-labelledby="h-result">
+        <h2 id="h-result">2. 검사 결과</h2>
+        <p id="summary" role="status"></p>
+        <p class="legend">
+          <mark class="sev-high">높음</mark> <mark class="sev-medium">중간</mark>
+          <mark class="sev-low">낮음</mark> <mark class="sev-info">참고</mark>
+        </p>
+        <div id="view" class="view" aria-label="하이라이트된 입력"></div>
+        <ul id="list" class="list"></ul>
+      </section>
+
+      <section aria-labelledby="h-mask">
+        <h2 id="h-mask">3. 가명 처리된 텍스트 (AI에 넣을 것)</h2>
+        <label><input id="estimated" type="checkbox" checked /> '추정' 항목도 가리기</label>
+        <textarea id="masked" rows="8" readonly spellcheck="false"></textarea>
+        <div class="row">
+          <button id="copy-masked" type="button">복사</button>
+          <span id="copy-msg" class="muted" role="status"></span>
+        </div>
+      </section>
+
+      <section aria-labelledby="h-restore">
+        <h2 id="h-restore">4. AI 답변 복원</h2>
+        <p class="muted">AI 답변을 붙여넣으면 <code>[이름1]</code> 같은 가명을 원래 값으로 되돌립니다. 대응표는 이 탭의 메모리에만 있습니다.</p>
+        <textarea id="answer" rows="6" spellcheck="false" autocomplete="off" placeholder="AI 답변을 붙여넣으세요."></textarea>
+        <textarea id="restored" rows="6" readonly spellcheck="false"></textarea>
+        <div class="row">
+          <button id="copy-restored" type="button">복사</button>
+          <span id="restore-msg" class="muted" role="status"></span>
+        </div>
+      </section>
+
+      <section class="row">
+        <button id="clear" type="button" class="danger">모두 지우기</button>
+        <span class="muted">탭을 벗어나고 10분이 지나면 입력과 대응표를 자동으로 지웁니다.</span>
+      </section>
+    </main>
+
+    <footer>
+      <h2>알아 두세요</h2>
+      <ul>
+        <li>"발견 없음"은 "안전함"이 아닙니다. 규칙에 맞지 않는 개인정보(이름 없이 누군지 알 수 있는 묘사, 영문 주소 등)는 찾지 못합니다.</li>
+        <li>복사한 내용은 운영체제의 클립보드 기록(Windows의 Win+V 등)에 남을 수 있습니다. 이 부분은 이 페이지가 통제할 수 없습니다.</li>
+        <li>입력과 대응표는 어디에도 저장하지 않습니다. 탭을 닫으면 사라집니다.</li>
+        <li>PDF·DOCX·사진과 폴더 검사, AI 보조 탐지는 아직 준비 중입니다.</li>
+      </ul>
+    </footer>
+
+    <script type="module" src="./src/main.ts"></script>
+  </body>
+</html>

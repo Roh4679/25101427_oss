@@ -1,0 +1,11 @@
+{
+  "name": "pii-guard",
+  "version": "0.1.0",
+  "license": "MIT",
+  "type": "module",
+  "bin": { "pii-guard": "src/index.ts" },
+  "engines": { "node": ">=22.18" },
+  "dependencies": {
+    "@pii-guard/core": "0.1.0"
+  }
+}
