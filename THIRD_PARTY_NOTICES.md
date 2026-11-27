@@ -14,6 +14,7 @@ vibe-signoff(MIT)가 가져다 쓰거나 참고한 외부 오픈소스·표준�
 |---|---|---|---|---|
 | SARIF 2.1.0 (OASIS 표준) | OASIS 표준 문서 | 참고 | `docs/spec/report-schema.md` 4장 SARIF 출력 대응표 | 2026-11-27 |
 | Google 태그(gtag.js) 설치 스니펫 | — (공개 설치 안내) | 참고 | `fixtures/intentional/clean-app/app/layout.tsx`, `signup-app/pages/_app.tsx`: 분석 툴 탐지 테스트용 최소 스니펫을 직접 작성 | 2026-11-27 |
+| gitleaks 설정 형식 (`[extend]`, `[allowlist]`) | MIT | 참고 | 저장소 최상위 `.gitleaks.toml`: fixtures/ 예외 처리. 규칙 파일은 복사하지 않음 | 2026-11-28 |
 | commander 15.1.0 | MIT | 의존성 | `src/cli.ts` 명령·옵션 파싱 | 2026-11-27 |
 | zod 4.6.7 | MIT | 의존성 | `src/config.ts`, `src/scanner/project.ts`(package.json), 골든 테스트 정답지 검증 | 2026-11-27 |
 | typescript 6.0.3 | Apache-2.0 | 의존성 (dev) | 빌드·타입 검사 | 2026-11-27 |

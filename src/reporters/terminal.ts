@@ -1,4 +1,4 @@
-import type { Category, Report, Status, Verdict } from "../types.js";
+import type { Category, Finding, Report, Status, Verdict } from "../types.js";
 
 // 한국어 표시 이름: docs/spec/report-schema.md 2장
 export const VERDICT_LABEL: Record<Verdict, string> = {
@@ -25,6 +25,23 @@ export const CATEGORY_LABEL: Record<Category, string> = {
   ux: "운영·UX",
 };
 
+const MAX_LOCATIONS = 10;
+
+// "파일:줄" 또는 URL. 같은 위치는 한 번만, 많으면 앞의 10곳만 보여 준다.
+function locations(findings: Finding[]): string {
+  const all = [
+    ...new Set(
+      findings.flatMap((f) => {
+        const l = f.location;
+        if (l?.file) return [l.line ? `${l.file}:${l.line}` : l.file];
+        return l?.url ? [l.url] : [];
+      }),
+    ),
+  ];
+  const shown = all.slice(0, MAX_LOCATIONS).join(", ");
+  return all.length > MAX_LOCATIONS ? `${shown} 외 ${all.length - MAX_LOCATIONS}곳` : shown;
+}
+
 export function renderTerminal(report: Report): string {
   const { score } = report;
   const lines = [
@@ -44,6 +61,8 @@ export function renderTerminal(report: Report): string {
     lines.push("", "확인할 항목");
     for (const r of open) {
       lines.push(`  [${STATUS_LABEL[r.status]}] ${r.id}${r.message ? ` — ${r.message}` : ""}`);
+      const where = locations(r.findings);
+      if (where) lines.push(`      위치: ${where}`);
       if (r.fix) lines.push(`      해결: ${r.fix}`);
       const todo = r.findings.flatMap((f) => f.policyTodo ?? []);
       if (todo.length > 0) {

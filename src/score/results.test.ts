@@ -199,6 +199,10 @@ describe("상위 실패 시 처리방침 포함 항목 (T55~T59)", () => {
   it("T57 분석 툴·해외 서비스 없음 → 수집 항목만", () => {
     expect(todo(run(PERSONAL)).map((t) => t.from)).toEqual(["privacy/policy-contents"]);
   });
+  it("T57a 채울 값이 비면 그 줄을 뺀다 (폼 없이 가입 API만 있음)", () => {
+    const r = run({ collects_personal_info: true, personal_forms: [], ...GA });
+    expect(todo(r).map((t) => t.from)).toEqual(["privacy/analytics-disclosure", "privacy/cookie-consent"]);
+  });
   it("T58 처리방침 needs_review → 항목 없음", () => {
     expect(todo(run({ ...PERSONAL, ...GA, all_text: text("개인정보처리방침") }))).toEqual([]);
   });

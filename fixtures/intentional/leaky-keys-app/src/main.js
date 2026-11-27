@@ -1,6 +1,6 @@
 import OpenAI from "openai";
 
-const OPENAI_API_KEY = "sk-proj-FAKEHARDCODED1111111111111111111";
+const OPENAI_API_KEY = "sk-proj-FAKE_TEST_HARDCODED_DO_NOT_USE_1111111111";
 
 const client = new OpenAI({
   apiKey: import.meta.env.VITE_OPENAI_API_KEY || OPENAI_API_KEY,

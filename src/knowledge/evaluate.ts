@@ -185,12 +185,14 @@ function combine(list: Step[]): Step {
 }
 
 // {fact.path}를 Fact 값으로 채운다. 배열은 중복을 빼고 ", "로 잇는다.
-export function renderHint(hint: string, facts: FactMap): string {
+// 채울 값이 하나라도 비면 undefined (그 줄은 policyTodo에 넣지 않는다).
+export function renderHint(hint: string, facts: FactMap): string | undefined {
   let out = hint;
   for (const ph of hintPlaceholders(hint)) {
     const [key, ...path] = ph.split(".");
     const values = [...new Set(strings(pluck(facts.get(key!), path)))];
-    out = out.replace(`{${ph}}`, values.length > 0 ? values.join(", ") : "확인 필요");
+    if (values.length === 0) return undefined;
+    out = out.replace(`{${ph}}`, values.join(", "));
   }
   return out;
 }
@@ -201,7 +203,8 @@ function traceFound(o: Obligation, facts: FactMap): boolean {
 }
 
 export function evaluate(o: Obligation, facts: FactMap, mode: "static" | "live"): EvalOutput {
-  const hint = o.parent_hint ? { hint: renderHint(o.parent_hint, facts) } : {};
+  const rendered = o.parent_hint ? renderHint(o.parent_hint, facts) : undefined;
+  const hint = rendered ? { hint: rendered } : {};
   if (o.trigger !== undefined && !evalCondition(o.trigger, facts)) {
     return { id: o.id, applicable: false, outcome: "pass", score: 1, certain: false, reasons: [], findings: [], ...hint };
   }

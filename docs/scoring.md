@@ -208,6 +208,7 @@
 | T55 | 처리방침 `fail`, GA 사용, 개인정보 폼 있음 (fixture `signup-app`) | 처리방침 Finding의 `policyTodo`에 수집 항목(폼 필드 종류)·분석 도구(ga4)·쿠키 사용과 거부 방법이 지식 베이스 순서로 들어감. 하위 의무는 `na` 그대로, 점수 56·`blocked` 변화 없음 |
 | T56 | 처리방침 `fail`, `overseas_services` = [Supabase, OpenAI, Supabase] | `policyTodo`에 "해외 서버로 이전될 수 있음: Supabase, OpenAI" (중복 없이 ", "로 연결) |
 | T57 | 처리방침 `fail`, 분석 툴·해외 서비스 없음 (fixture `consent-label-app`) | `policyTodo`에 수집 항목(이메일·비밀번호)만. 분석·국외 이전·쿠키 항목 없음 |
+| T57a | 처리방침 `fail`, 폼 없이 회원가입 API만 있음 (`personal_forms` = []) | "수집 항목" 줄은 빠지고 분석 도구·쿠키 항목만 |
 | T58 | 처리방침 `needs_review` (흔적만 있음) | `policyTodo` 없음 |
 | T59 | 처리방침 `fail` + `confirmations: pass` | 상위 `pass` → `policyTodo` 없음, 하위 정상 평가 |
 | T56a | 대응표(`services.yaml`)에 없는 패키지만 있음 | `overseas_services` = [] → `privacy/overseas-transfer` `na` (trigger) |
@@ -238,3 +239,12 @@
 | T73 | fixture `clean-app` (무시된 `.env`에 `SUPABASE_SERVICE_ROLE_KEY`) | 100점, `ready`, 정답지 변화 없음 |
 | T74 | 골든 테스트 (`git: false`), fixture의 `.env`가 vibe-signoff 저장소에 강제 추가돼 있음 | `git_tracked` Fact 없음 → 저장소 추적 정보가 판정에 영향 없음 |
 | T75 | `.gitignore`의 부정 패턴 `.env*` + `!.env.example` | `.env.local`은 `gitignored`, `.env.example`은 아님 |
+
+**실제 git으로 확인하는 테스트** (`src/adapters/git.test.ts`, 5단계). 목(mock)을 쓰지 않는다. 테스트마다 임시 디렉터리에서 `git init` → 파일 작성 → `git add` → `git commit`(테스트용 `user.name`·`user.email`을 `-c`로 지정)을 실제로 실행한 뒤 어댑터를 돌린다. git이 없는 환경이면 이 묶음은 건너뛰고 이유를 출력한다 (CI에는 git이 있어야 한다).
+
+| # | 저장소 상태 | 기대 결과 |
+|---|---|---|
+| T76 | `.gitignore`에 `.env` → `git add -f .env` → commit (추적된 .env) | `git_tracked`에 `.env`, `gitignored`에도 `.env` → `env_files_exposed` reason `tracked` → 차단 |
+| T77 | `.gitignore`에 `.env`, `.env`는 add하지 않음 → commit (ignore된 .env) | `git_tracked`에 없음, `gitignored`에 있음 → 정상 |
+| T78 | `.gitignore` 없음, `.env`는 add하지 않음 → 다른 파일만 commit (ignore 안 됐지만 추적 안 된 .env) | `git_tracked`에 없음, `gitignored`에 없음 → reason `not_ignored` → 차단 |
+| T79 | T77과 같지만 스캔 루트가 저장소 하위 폴더 | 경로가 스캔 루트 기준으로 바뀌어 같은 결과 |

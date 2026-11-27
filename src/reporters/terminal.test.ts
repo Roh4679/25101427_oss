@@ -53,6 +53,22 @@ describe("renderTerminal", () => {
     expect(out).toContain("설정으로 지정됨(미검증): https://x.notion.site/t");
   });
 
+  it("Finding 위치를 파일:줄로 보여 준다 (중복 제거, 10곳 넘으면 줄임)", () => {
+    const loc = (file: string, line?: number) => ({ location: { file, ...(line ? { line } : {}) }, message: "m", fix: "f" });
+    const out = renderTerminal(
+      report([
+        result({
+          id: "ux/button-labels", grade: "low", status: "needs_review",
+          findings: [loc("components/Banner.tsx", 9), loc("components/Banner.tsx", 9), loc(".env"), { location: { url: "https://x.com/a" }, message: "m", fix: "f" }],
+        }),
+        result({ id: "accessibility/img-alt", grade: "medium", status: "partial", findings: Array.from({ length: 12 }, (_, i) => loc("app/page.tsx", i + 1)) }),
+      ]),
+    );
+    expect(out).toContain("      위치: components/Banner.tsx:9, .env, https://x.com/a\n");
+    expect(out).toContain("app/page.tsx:10 외 2곳");
+    expect(out).not.toContain("app/page.tsx:11");
+  });
+
   it("사용자 메시지에 금지 표현이 없다", () => {
     const out = renderTerminal(report([result({})]));
     expect(out).not.toMatch(/위법|불법|위반입니다/);

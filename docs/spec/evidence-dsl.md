@@ -131,7 +131,7 @@ trace: ["개인정보처리방침", "privacy policy"]   # any_of와 같은 원�
 ```
 
 - 붙는 조건: ① 상위 최종 상태가 `fail` ② 하위 의무의 `applies_when`이 참 (적용 조건이 거짓이면 붙이지 않는다). 상위가 `needs_review`·`partial`이면 붙이지 않는다 (처리방침이 있을 수 있어 "새로 만들" 대상이 아니다).
-- `{...}`는 Fact 키(점으로 하위 필드)이며 [facts.md](facts.md)에 있어야 한다. 없으면 로더 스키마 오류. Fact 값으로 채운다. 배열은 중복을 빼고 ", "로 잇는다. 문구는 YAML에만 쓴다.
+- `{...}`는 Fact 키(점으로 하위 필드)이며 [facts.md](facts.md)에 있어야 한다. 없으면 로더 스키마 오류. Fact 값으로 채운다. 배열은 중복을 빼고 ", "로 잇는다. **채울 값이 비면 그 줄은 `policyTodo`에서 뺀다** ("확인 필요"로 채우지 않는다). 문구는 YAML에만 쓴다.
 - 순서는 지식 베이스 순서. 점수·상태·판정에는 영향이 없다 (하위 의무는 `na` 그대로).
 - 리포트 필드는 `Finding.policyTodo` ([report-schema.md](report-schema.md)).
 
