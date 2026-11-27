@@ -6,11 +6,11 @@
 
 > **치명 항목은 근거가 확실할 때만 자동 차단한다.**
 
-- 확실한 부재(관련 흔적이 프로젝트 전체에 없음, 또는 렌더링 결과로 확인됨) → 실패, 차단
-- 일부만 발견되는 등 불확실함 → 확인 필요(0.5), 차단하지 않음
+- 확실한 부재: 의무별로 정의된 흔적 패턴(`trace`)이 프로젝트 전체(`--live`면 렌더링한 페이지 포함)에 없음 → 실패, 차단
+- 불확실함: 흔적은 있는데 장치(페이지, 고지 문구 등)를 다 확인하지 못함 → 확인 필요(0.5), 차단하지 않음
 - 사람이 확인한 결과(`confirmations`)가 있으면 그것이 가장 우선한다
 
-기획서 6.8의 "페이지 완화 규칙"은 이 원칙의 한 경우다. 정적 모드에서 페이지를 못 찾은 것은 불확실한 실패로 본다.
+기획서 6.8의 "페이지 완화 규칙"은 이 원칙의 한 경우다. 흔적은 있는데 정적 분석으로 페이지를 못 찾은 것은 불확실한 실패로 본다.
 
 ## 2. 입력
 
@@ -20,7 +20,7 @@
 { id, applicable, outcome: "pass" | "partial" | "unknown" | "fail", score, certain: boolean, reasons, findings }
 ```
 
-`certain`은 `outcome`이 `fail`일 때만 의미가 있다.
+`certain`은 `outcome`이 `pass`가 아닐 때만 의미가 있다. 정하는 규칙은 `evidence-dsl.md` 3.3.
 
 ## 3. 계산 순서
 
@@ -51,9 +51,10 @@
    | outcome | 상태 |
    |---|---|
    | pass | `pass` 1 |
-   | fail + `certain: true` | `fail` 0 → **차단** |
-   | fail + `certain: false` | `needs_review` 0.5, `mitigated: true` |
-   | partial, unknown | `needs_review` 0.5, `mitigated: true` |
+   | fail·partial·unknown + `certain: true` | `fail` 0 → **차단** |
+   | fail·partial·unknown + `certain: false` | `needs_review` 0.5, `mitigated: true` |
+
+   치명 항목은 부분 통과 비율(예: 사업자 정보 4개 중 2개)을 점수로 쓰지 않는다. 확실하면 0, 아니면 0.5다.
 
 4. **확인 반영**: `confirmations[id]`가 `pass`면 `pass` 1, `fail`이면 `fail` 0. `confirmed: true`. 쓸 수 있는 의무는 `check: semi`이거나 grade가 critical인 의무다. 그 밖의 의무에 쓰면 경고하고 무시한다.
 5. **총점**: `floor(Σ(가중치 × 점수) / Σ(가중치) × 100)`. 적용 항목이 없으면 100.
@@ -65,50 +66,82 @@
 
 반올림하면 89.5점이 90점(`ready`)이 되고, 69.5점이 70점(`ready_with_fixes`)이 된다. 판정 경계에서 점수를 올려 주지 않으려고 총점과 영역 점수 모두 내림을 쓴다. 따라서 화면에 보이는 점수와 판정은 항상 일치한다.
 
-## 4. "확실한 실패"를 만드는 증거
+## 4. 치명 항목별 동작
 
-`certain`은 평가기가 정한다 (`evidence-dsl.md` 3.3).
+`certain`은 평가기가 정한다 (`evidence-dsl.md` 3.3). 흔적 패턴은 지식 베이스 YAML의 `trace` 필드다.
 
-| 증거 | 실패할 때 `certain` |
-|---|---|
-| `page_exists` | 정적 모드 → false, `--live` 모드 → true |
-| `page_text_contains` | 페이지 없음 → `page_exists`와 같음. 페이지는 있는데 문구 없음 → true |
-| `text_contains` (`all_text` 대상) | true (프로젝트 전체를 봤으므로) |
-| `truthy` `falsy` `coverage` `every` `none` `text_absent` | true (관찰된 사실) |
+| 의무 | 흔적 패턴(`trace`) | 흔적 없음 | 흔적 있음 + 장치 확인 안 됨 | 통과 |
+|---|---|---|---|---|
+| `privacy/policy-page` | "개인정보처리방침", "privacy policy" | 차단 | 확인 필요 | 페이지 또는 그 텍스트의 링크(외부 포함) |
+| `commerce/refund-policy` | "청약철회", "환불정책", "환불규정" | 차단 | 확인 필요 | 환불 페이지, 또는 페이지 본문·푸터에 흔적 (전용 페이지 불필요) |
+| `commerce/business-info` | "사업자등록번호", "통신판매업", 사업자등록번호 형식 | 차단 | 확인 필요 | 상호·대표자·사업자등록번호·통신판매업 4개 모두 |
+| `security/*`, `privacy/consent-checkbox` | 없음 (관찰된 사실로 판정) | — | — | 실패하면 항상 확실 → 차단 |
 
-치명 항목의 YAML은 **"흔적이 어디에도 없음"을 확인하는 `text_contains`(certain) + 구체 장치를 확인하는 `page_exists`(정적에서 uncertain)**를 AND로 함께 둔다. 그러면 다음처럼 동작한다.
+`--live` 모드라도 흔적이 하나라도 있으면 차단하지 않는다. 크롤링하지 못한 화면(로그인 뒤 결제 화면 등)에 고지가 있을 수 있기 때문이다. 정적 코드에 흔적이 남아 있으면 렌더링 결과에 없어도 "확인 필요"다.
 
-| 상황 (정적 모드) | 결과 |
-|---|---|
-| 관련 문구가 프로젝트 어디에도 없음 | 확실한 실패 → 차단 |
-| 문구는 있는데 페이지를 못 찾음 | 불확실한 실패 → 확인 필요 0.5 |
-| 페이지 있음 | 통과 |
-| `--live`에서 문구는 있는데 페이지가 없음 | 확실한 실패 → 차단 |
+## 5. 필수 테스트 케이스 (`src/score/*.test.ts`, `src/knowledge/*.test.ts`, 3단계에서 작성)
 
-## 5. 필수 테스트 케이스 (`src/score/*.test.ts`, 3단계에서 작성)
+**확실성 기준 — 환불 정책** (결제 SDK 있음)
 
 | # | 입력 | 기대 결과 |
 |---|---|---|
-| T1 | 결제 SDK 있음, 환불·청약철회 문구 전체에 없음 (정적) | `commerce/refund-policy` `fail` 0, `blocked` |
-| T2 | 결제 SDK 있음, 푸터에 "환불" 문구만 있고 페이지 없음 (정적) | `needs_review` 0.5, `mitigated`, 차단 없음 |
-| T3 | T2와 같은데 `--live` | `fail`, `blocked` |
-| T4 | 결제 SDK 있음, 환불 페이지 있음 | `pass` |
-| T5 | 결제 SDK 있음, 사업자 정보 4항목 중 0개 | `commerce/business-info` `fail`, `blocked` |
-| T6 | 사업자 정보 4항목 중 2개 | `needs_review` 0.5 (0.5지 0.5×비율이 아님), 차단 없음 |
-| T7 | 사업자 정보 4항목 모두 | `pass` |
-| T8 | T2 + `confirmations: fail` | `fail` 0, `confirmed`, `blocked` |
-| T9 | T1 + `confirmations: pass` | `pass` 1, `confirmed`, 차단 없음 |
-| T10 | 결제 SDK 없음 | 두 의무 모두 `na`, 분모에서 빠짐 |
-| T11 | 처리방침 문구 전체에 없음, 개인정보 폼 있음 (정적) | `privacy/policy-page` `fail`, `blocked` |
-| T12 | 푸터에 "개인정보처리방침" 외부 링크(노션) | `pass` |
-| T13 | 비치명 auto 항목 정적 페이지 미탐 (`legal/terms-page`) | `fail` 0, 차단 없음 |
-| T14 | `confirmations`를 비치명 auto 항목에 씀 | 경고, 무시 |
-| T15 | 가중 평균 89.9 | 89, `ready_with_fixes` |
-| T16 | 가중 평균 90.0 | 90, `ready` |
-| T17 | 가중 평균 69.9 / 70.0 | 69 `needs_work` / 70 `ready_with_fixes` |
-| T18 | 차단 + 가중 평균 92 | 59, `blocked` |
-| T19 | 차단 + 가중 평균 40 | 40, `blocked` |
-| T20 | 영역 가중 평균 79.6 | 영역 점수 79 |
-| T21 | 적용 항목 0개인 영역 | `null` |
-| T22 | `weightMode: raw` | 가중치 = risk |
-| T23 | 종료 코드 | `ready`·`ready_with_fixes` → 0, `needs_work`·`blocked` → 1 |
+| T1 | 흔적 전체에 없음 (정적) | `fail` 0, `blocked` |
+| T2 | 결제 컴포넌트에만 "청약철회" (페이지·푸터 아님, 정적) | `needs_review` 0.5, `mitigated`, 차단 없음 |
+| T3 | T2 + `--live`, 렌더링한 페이지엔 흔적 없음 (결제 화면이 로그인 뒤) | `needs_review` 0.5, 차단 없음 |
+| T4 | `--live`, 렌더링한 페이지와 코드 어디에도 흔적 없음 | `fail`, `blocked` |
+| T5 | 전용 페이지 없이 약관 페이지 본문에 "청약철회" | `pass` |
+| T6 | 푸터에 "환불 정책" 문구 | `pass` |
+| T7 | `/refund` 전용 페이지 | `pass` |
+| T8 | "환불은 고객센터로 문의" 만 있음 (흔적 아님) | `fail`, `blocked` |
+
+**확실성 기준 — 사업자 정보** (결제 SDK 있음)
+
+| # | 입력 | 기대 결과 |
+|---|---|---|
+| T9 | 4항목 모두 없음 | `fail`, `blocked` |
+| T10 | "상호", "대표"만 있음 (흔적 없음) | `fail`, `blocked` |
+| T11 | "사업자등록번호"만 있음 (흔적 있음, 1/4) | `needs_review` 0.5 (비율 0.25가 아님), 차단 없음 |
+| T12 | `123-45-67890` 형식 번호 + 상호 + 대표자 (3/4) | `needs_review` 0.5 |
+| T13 | 4항목 모두 | `pass` |
+
+**확실성 기준 — 처리방침** (개인정보 폼 있음)
+
+| # | 입력 | 기대 결과 |
+|---|---|---|
+| T14 | 흔적 전체에 없음 | `fail`, `blocked` |
+| T15 | 동의 체크박스 라벨 "개인정보 수집·이용 동의"만 있음 (흔적 아님) | `fail`, `blocked` (fixture `consent-label-app`) |
+| T16 | 체크박스 라벨 "개인정보처리방침에 동의합니다"만 있고 페이지·링크 없음 | `needs_review` 0.5, 차단 없음 |
+| T17 | 푸터에 "개인정보처리방침" 노션 외부 링크 | `pass` |
+| T18 | `/privacy` 페이지가 있고 링크 텍스트는 "Privacy"뿐 (흔적 문구 없음) | `pass` (페이지가 맞으면 흔적이 없어도 확실한 실패가 아님) |
+
+**사람 확인, 해당 없음, 비치명 항목**
+
+| # | 입력 | 기대 결과 |
+|---|---|---|
+| T19 | T2 + `confirmations: fail` | `fail` 0, `confirmed`, `blocked` |
+| T20 | T1 + `confirmations: pass` | `pass` 1, `confirmed`, 차단 없음 |
+| T21 | 결제 SDK 없음 | 환불·사업자 정보 모두 `na`, 분모에서 빠짐 |
+| T22 | 비치명 auto 항목 정적 페이지 미탐 (`legal/terms-page`) | `fail` 0, 차단 없음 |
+| T23 | `confirmations`를 비치명 auto 항목에 씀 | 경고, 무시 |
+| T24 | 치명 항목인데 `page_exists`를 쓰면서 `trace`가 없는 YAML | 지식 베이스 로더 스키마 오류 (종료 코드 2) |
+
+**`all_text` 범위**
+
+| # | 입력 | 기대 결과 |
+|---|---|---|
+| T25 | 흔적이 최상위 `docs/`·`README.md`·`*.test.tsx`·코드 주석에만 있음 | 흔적 없음으로 판정 |
+| T26 | 흔적이 `app/docs/refund/page.tsx`, `locales/ko.json` 값, 문자열 상수에 있음 | 흔적 있음으로 판정 |
+
+**점수·판정 경계**
+
+| # | 입력 | 기대 결과 |
+|---|---|---|
+| T27 | 가중 평균 89.9 | 89, `ready_with_fixes` |
+| T28 | 가중 평균 90.0 | 90, `ready` |
+| T29 | 가중 평균 69.9 / 70.0 | 69 `needs_work` / 70 `ready_with_fixes` |
+| T30 | 차단 + 가중 평균 92 | 59, `blocked` |
+| T31 | 차단 + 가중 평균 40 | 40, `blocked` |
+| T32 | 영역 가중 평균 79.6 | 영역 점수 79 |
+| T33 | 적용 항목 0개인 영역 | `null` |
+| T34 | `weightMode: raw` | 가중치 = risk |
+| T35 | 종료 코드 | `ready`·`ready_with_fixes` → 0, `needs_work`·`blocked` → 1 |

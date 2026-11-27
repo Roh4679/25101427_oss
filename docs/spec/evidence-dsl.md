@@ -58,32 +58,41 @@ trigger:
 | `any` | `[증거...]` | 하위 증거 중 가장 좋은 결과 (OR) |
 
 - `any_of`·`all_of`의 원소는 문자열, **동의어 배열**, 또는 `{ regex: "..." }`이다. `all_of: [["처리목적", "이용목적"], "보호책임자"]` 는 항목 2개다. 동의어 배열 안에도 `{ regex }`를 섞을 수 있다. 정규식은 **정규화한 텍스트**에 적용한다 (공백이 없어진 상태).
+- `any_of: $trace`라고 쓰면 그 의무의 `trace` 패턴 목록을 그대로 쓴다 (3.3).
 - `field`는 점 경로다(`consent.present`). 경로 중간에 배열이 있으면 펼쳐서 모두 본다(`fields.kind`).
 - 모든 증거에 `mode: live`를 붙일 수 있다. 정적 모드에서는 그 증거를 **건너뛴다** (목록에서 없는 것으로 본다).
 
 ### 3.2 증거 결합
 
-1. `fail`이 하나라도 있으면 `fail`. 실패한 증거 중 **하나라도 `certain`이면 `certain`** (AND이므로 하나가 확실히 거짓이면 전체가 확실히 거짓)
+1. `fail`이 하나라도 있으면 `fail`
 2. 아니고 `unknown`이 하나라도 있으면 `unknown`
 3. 아니면 점수 중 최솟값 (1이면 `pass`, 아니면 `partial`)
 4. 건너뛰고 남은 증거가 없으면 `pass`
 
-`any`(OR) 그룹은 하위 증거가 **모두 `certain` 실패일 때만** `certain` 실패다.
+평가기 출력은 `{ id, applicable, outcome: pass|partial|unknown|fail, score, certain, reasons: string[], findings }` 이다. `certain`은 3.3으로 정한다. 이것을 상태·점수로 바꾸는 일은 점수 모델이 한다 ([docs/scoring.md](../scoring.md)).
 
-평가기 출력은 `{ id, applicable, outcome: pass|partial|unknown|fail, score, certain, reasons: string[], findings }` 이다. 이것을 상태·점수로 바꾸는 일은 점수 모델이 한다 ([docs/scoring.md](../scoring.md)).
+### 3.3 흔적 패턴(`trace`)과 실패의 확실성(`certain`)
 
-### 3.3 실패의 확실성 (`certain`)
+치명 항목이 "확실히 없다"고 말하려면, 그 의무에 고유한 **흔적 패턴**이 프로젝트 어디에도 없어야 한다. 흔적 패턴은 의무마다 YAML의 `trace` 필드로 정의한다.
 
-실패한 증거는 "확실히 없다"(`certain: true`)인지 "못 찾았을 수도 있다"(`certain: false`)인지를 함께 낸다. 점수 모델은 **치명 항목에서만** 이 값을 쓴다 ([docs/scoring.md](../scoring.md) 1장 원칙).
+```yaml
+trace: ["개인정보처리방침", "privacy policy"]   # any_of와 같은 원소 문법. 정규화 후 비교
+```
 
-| 증거 | `certain` |
+**`certain` 판정** (`outcome`이 `fail`, `partial`, `unknown`일 때):
+
+| 의무 | `certain: true` 조건 |
 |---|---|
-| `page_exists` | 정적 모드 → `false`, `--live` 모드 → `true` |
-| `page_text_contains` | 페이지 없음 → `page_exists`와 같음. 페이지는 있는데 문구 없음 → `true` |
-| `text_contains` | `true` |
-| `truthy` `falsy` `coverage` `every` `none` `text_absent` | `true` |
+| `trace`가 있음 | `trace` 패턴이 `all_text`에 하나도 없고, **그리고** 그 의무의 `page_exists` 증거가 어떤 페이지와도 맞지 않음 |
+| `trace`가 없음 | `outcome`이 `fail`이면 항상 `true` (관찰된 사실로만 판정하는 의무) |
 
-**치명 항목 작성 규칙**: 페이지나 장치를 찾는 증거(`page_exists`)만 두지 말고, 프로젝트 전체 텍스트(`all_text`)에서 흔적을 찾는 `text_contains`를 함께 둔다. 흔적이 아예 없으면 확실한 실패(차단), 흔적은 있는데 페이지를 못 찾으면 불확실한 실패(확인 필요)가 된다.
+- 흔적이 하나라도 있으면 그 의무의 실패는 **언제나 불확실**하다. 모드(`--live`)와 관계없다.
+- `--live` 모드에서는 `all_text`에 렌더링한 모든 페이지의 본문이 더해진다. 정적 코드의 텍스트는 그대로 남는다. 따라서 로그인 뒤 화면처럼 크롤링하지 못한 화면의 문구도 코드에 있으면 흔적으로 인정된다.
+- 점수 모델은 `certain`을 **치명 항목에서만** 쓴다 ([docs/scoring.md](../scoring.md) 1장 원칙).
+
+**`trace` 작성 규칙**
+- 그 의무를 지켰을 때만 나타나는 **좁은 문구**를 쓴다. "개인정보", "환불", "대표" 같은 일반 단어는 쓰지 않는다. 일반 단어가 흔적으로 잡히면 동의 체크박스 문구만 있고 처리방침이 없는 앱이 "확인 필요"로 빠져 CI에서 차단되지 않는다.
+- 치명 등급이면서 `page_exists` 또는 `page_text_contains`를 쓰는 의무는 `trace`가 **반드시** 있어야 한다. 없으면 지식 베이스 로더가 스키마 오류를 낸다.
 
 ## 4. 1차 의무 목록
 
@@ -128,41 +137,49 @@ trigger:
     - every: { fact: personal_forms, field: consent.present }
     - none:  { fact: personal_forms, field: consent.optional_prechecked }
 
+- id: privacy/policy-page
+  category: privacy
+  check: auto
+  factors: { L: 3, I: 2, P: 3 }
+  trigger: collects_personal_info
+  # 흔적: 처리방침 문구 또는 그 텍스트의 링크. "개인정보 수집·이용 동의" 같은 일반 문구는 흔적이 아니다
+  trace: ["개인정보처리방침", "privacy policy"]
+  evidence:
+    # 페이지·푸터 링크(외부 노션 포함)가 있으면 통과
+    - page_exists: { kind: privacy, match: ["privacy", "개인정보처리방침"] }
+  # 흔적 없음 → 확실한 실패(차단) / 흔적은 있는데 페이지 없음 → 확인 필요
+
 - id: commerce/refund-policy
   category: commerce
   check: semi
   factors: { L: 3, I: 2, P: 3 }
   trigger: payment_sdks
+  # 법적 요구는 청약철회 정보 고지이지 전용 페이지가 아니다
+  trace: ["청약철회", "환불정책", "환불규정"]
   evidence:
-    # 1) 흔적: 프로젝트 어디에도 없으면 확실한 실패 → 차단
-    - text_contains: { fact: all_text, field: text, any_of: ["환불", "청약철회", "반품", "refund"] }
-    # 2) 장치: 흔적은 있는데 페이지를 못 찾으면 정적 모드에서는 불확실한 실패 → 확인 필요
-    - page_exists: { kind: refund, match: ["refund", "환불", "청약철회"] }
+    - any:
+        - page_exists: { kind: refund, match: ["refund", "환불정책", "환불규정", "청약철회"] }
+        - text_contains: { fact: pages, field: text, any_of: $trace }   # 약관·결제 화면 등 페이지 본문
+        - text_contains: { fact: footer_text, any_of: $trace }          # 모든 페이지 하단
+  # 흔적이 코드·렌더링 결과 어디에도 없음 → 차단 / 흔적이 컴포넌트에만 있음(예: 로그인 뒤 결제 화면) → 확인 필요
 
 - id: commerce/business-info
   category: commerce
   check: semi
   factors: { L: 3, I: 2, P: 3 }
   trigger: payment_sdks
+  # "상호", "대표"는 일반 단어라 흔적에서 뺀다
+  trace: ["사업자등록번호", "통신판매업", { regex: '\d{3}-\d{2}-\d{5}' }]
   evidence:
-    # 0개 → 확실한 실패(차단), 1~3개 → partial(치명이므로 확인 필요 0.5), 4개 → 통과
+    # 4개 → 통과 / 흔적 있고 일부 → 확인 필요 / 흔적 없음 → 차단
     - text_contains:
         fact: all_text
         field: text
         all_of:
           - ["상호"]
           - ["대표자", "대표"]
-          - ["사업자등록번호", { regex: "\\d{3}-\\d{2}-\\d{5}" }]
+          - ["사업자등록번호", { regex: '\d{3}-\d{2}-\d{5}' }]
           - ["통신판매업"]
-
-- id: privacy/policy-page
-  category: privacy
-  check: auto
-  factors: { L: 3, I: 2, P: 3 }
-  trigger: collects_personal_info
-  evidence:
-    - text_contains: { fact: all_text, field: text, any_of: ["개인정보처리방침", "개인정보 처리방침", "privacy"] }
-    - page_exists: { kind: privacy, match: ["privacy", "개인정보처리방침", "개인정보 처리방침"] }
 
 - id: ux/button-labels
   category: ux

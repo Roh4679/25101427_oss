@@ -1,0 +1,32 @@
+{
+  "$comment": "초안. 사용자 검토 후 expected.json으로 확정한다.",
+  "fixture": "consent-label-app",
+  "options": { "mode": "static", "network": false, "region": "kr" },
+  "results": {
+    "security/secret-exposure": "pass",
+    "security/db-access": "na",
+    "security/dangerous-patterns": "pass",
+    "security/dependencies": "na",
+    "privacy/policy-page": "fail",
+    "privacy/policy-contents": "needs_review",
+    "privacy/overseas-transfer": "na",
+    "privacy/analytics-disclosure": "na",
+    "privacy/embed-disclosure": "na",
+    "privacy/consent-checkbox": "pass",
+    "privacy/minimal-collection": "pass",
+    "privacy/cookie-consent": "na",
+    "commerce/business-info": "na",
+    "commerce/refund-policy": "na",
+    "legal/terms-page": "pass",
+    "advertising/unsupported-claims": "pass",
+    "advertising/fake-reviews": "na",
+    "accessibility/img-alt": "na",
+    "accessibility/color-contrast": "na",
+    "accessibility/keyboard-form": "na",
+    "accessibility/axe-summary": "na",
+    "ux/button-labels": "pass"
+  },
+  "verdict": "blocked",
+  "blockers": ["privacy/policy-page"],
+  "score": 59
+}

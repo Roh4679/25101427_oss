@@ -95,10 +95,33 @@ type FieldKind = "email" | "phone" | "name" | "birth" | "gender" | "address" | "
 | 키 | 타입 | 생성 | 설명 | 단계 |
 |---|---|---|---|---|
 | `visible_text` | `{ text: string } & Loc[]` | `text` | JSX 텍스트 노드, HTML 본문 텍스트 (주석, script, style 제외) | 7 |
-| `all_text` | `{ text: string } & Partial<Loc>[]` | `text` | **프로젝트 전체 텍스트.** `visible_text` + 코드의 문자열 리터럴(2자 이상, import 경로 제외) + `.md`·`.mdx`·`.txt` 본문(단, 서비스 화면이 아닌 `README*`, `CHANGELOG*`, `CONTRIBUTING*`, `LICENSE*`, `docs/` 아래 파일은 제외) + `pages`의 `path`·`external`·`link_text`·`title`. 치명 항목에서 "흔적이 어디에도 없다"를 확실히 말하기 위한 Fact (`evidence-dsl.md` 3.3). `pages`가 있으면 그 흔적도 반드시 여기 들어가므로, 페이지를 찾았는데 흔적이 없다는 결과는 나오지 않는다 | 4 |
+| `all_text` | `{ text: string; source: "jsx" \| "string" \| "markdown" \| "html" \| "i18n" \| "live" } & Partial<Loc>[]` | `text` | **사용자에게 보이는 텍스트 전체.** 치명 항목의 흔적 패턴(`trace`) 확인용 (`evidence-dsl.md` 3.3). 수집 범위와 제외 규칙은 아래 4.1 | 4 |
 | `buttons` | `{ label: string } & Loc[]` | `text` | `<button>`, `input[type=submit\|button]`, `role="button"`의 라벨. 라벨 없음은 `""` | 7 |
 | `review_components` | `Loc[]` | `reviews` | 이름에 review·testimonial·후기가 들어간 컴포넌트 | 7 |
 | `hardcoded_reviews` | `{ count: number } & Loc[]` | `reviews` | 후기 컴포넌트 안의 하드코딩 배열(이름 + 별점/본문 필드를 가진 객체 2개 이상) | 7 |
+
+### 4.1 `all_text` 수집 범위
+
+**모으는 것** (주석은 모두 뺀다)
+
+| source | 대상 |
+|---|---|
+| `jsx` | JSX 텍스트 노드, 사용자에게 보이는 속성 값(`alt`, `title`, `placeholder`, `aria-label`, `label`) |
+| `string` | `.ts`·`.tsx`·`.js`·`.jsx`·`.vue`·`.svelte`의 문자열·템플릿 리터럴. 단 import·require·export from 경로, `className`·`class`·`style` 값, 2자 미만은 뺀다 |
+| `markdown` | `.md`·`.mdx` 본문 (front matter 제외) |
+| `html` | `.html`의 본문 텍스트 (`<script>`·`<style>`·주석 제외), `<title>`, 위 속성 값 |
+| `i18n` | 다국어 파일의 문자열 값: `locales/**`, `messages/**`, `i18n/**`, `lang/**` 아래 `.json` (키는 빼고 값만) |
+| `live` | `--live` 모드에서 렌더링한 모든 페이지의 본문. 정적 소스에 **더한다** (대체하지 않는다) |
+
+**빼는 것** (공통 제외 + 아래)
+
+| 대상 | 이유 |
+|---|---|
+| 저장소 최상위 `docs/` | 프로젝트 문서. `app/docs/`, `pages/docs/`, `src/docs/` 같은 실제 라우트는 **포함** |
+| 최상위의 `README*`, `CHANGELOG*`, `CONTRIBUTING*`, `LICENSE*` | 서비스 화면이 아님 |
+| `*.test.*`, `*.spec.*`, `__tests__/`, `__mocks__/` | 테스트 코드 |
+| `fixtures/` | 테스트 데이터 |
+| `node_modules`, `.next`, `dist`, `build`, `coverage`, `.git` | 공통 제외 |
 
 ## 5. 접근성 (src/rules/static)
 
