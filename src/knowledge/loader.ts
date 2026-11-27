@@ -37,7 +37,7 @@ function conditionFacts(c: Condition): string[] {
   if ("all" in c) return c.all.flatMap(conditionFacts);
   if ("any" in c) return c.any.flatMap(conditionFacts);
   if ("not" in c) return conditionFacts(c.not);
-  return [c.fact];
+  return [c.fact]; // { fact, eq } · { fact, field, in }
 }
 
 function evidenceFacts(e: Evidence): string[] {

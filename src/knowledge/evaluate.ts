@@ -42,6 +42,11 @@ export function evalCondition(c: Condition, facts: FactMap): boolean {
   if ("all" in c) return c.all.every((x) => evalCondition(x, facts));
   if ("any" in c) return c.any.some((x) => evalCondition(x, facts));
   if ("not" in c) return !evalCondition(c.not, facts);
+  if ("in" in c) {
+    // 배열 원소 중 field 값이 목록에 든 것이 하나라도 있으면 참
+    const list = c.in.map((x) => JSON.stringify(x));
+    return pluck(facts.get(c.fact), splitPath(c.field)).some((v) => list.includes(JSON.stringify(v)));
+  }
   return JSON.stringify(facts.get(c.fact)) === JSON.stringify(c.eq);
 }
 

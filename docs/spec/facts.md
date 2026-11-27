@@ -142,6 +142,7 @@ type FieldKind = "email" | "phone" | "name" | "birth" | "gender" | "address" | "
 | `public_keys_needing_restriction` | `{ name: string } & Loc[]` | `secrets` | `.env`의 변수 중 이름이 `services.yaml` `env_names.restricted`(Google Maps 키 등)에 맞는 것. 공개되지만 허용 도메인·API 제한이 필요한 키 | 5 |
 | `supabase_migrations` | `string[]` | `supabase` | `supabase/` 아래 `.sql` 파일 경로 (경로순) | 5 |
 | `supabase_tables_without_rls` | `{ table: string } & Loc[]` | `supabase` | 마이그레이션 SQL에서 `create table` 후 `enable row level security`가 없는 public 테이블. 여러 파일이면 경로순으로 읽어 마지막 상태(`disable`이 뒤에 오면 꺼짐) | 5 |
+| `supabase_open_policies` | `{ table: string; command: "select" \| "insert" \| "update" \| "delete" \| "all" } & Loc[]` | `supabase` | 마이그레이션 SQL의 `create policy` 중 `using (true)` 또는 `with check (true)`인 public 테이블 정책. `for`가 없으면 `all` | 5 |
 | `supabase_from_calls` | `Loc[]` | `supabase` | 코드에서 Supabase 클라이언트로 테이블을 읽고 쓰는 호출 (`.from("테이블")`). `@supabase/*`를 import하거나 `supabase` 식별자를 쓰는 파일만 | 5 |
 | `service_role_in_client` | `Loc[]` | `supabase` | 클라이언트 번들 대상 파일에서 service_role 키·변수 사용, 또는 `NEXT_PUBLIC_`·`VITE_` 변수 이름에 `SERVICE_ROLE` | 5 |
 | `firebase_open_rules` | `Loc[]` | `firebase` | `firestore.rules`, `storage.rules`, `database.rules.json`의 `if true` / `".read": true` | 5 |

@@ -277,3 +277,13 @@ RLS만 켜고 정책이 없는 테이블은 아무도 접근할 수 없어 안�
 | T94 | `https://api.example.com/v1`, `mailto:help@example.com` | 비밀값 아님 |
 | T95 | T91만 있음 | 키 노출 `needs_review` 0.5, `mitigated`, 차단 없음. "허용 도메인(HTTP 리퍼러)과 API 제한을 설정했는지 확인하세요" |
 
+**`using (true)` 정책 (Supabase)** — RLS만 켜고 정책이 없는 테이블은 `pass` (T81)
+
+| # | 입력 | 기대 결과 |
+|---|---|---|
+| T96 | `create policy ... for select using (true)` | `security/db-access` `needs_review` 0.5 (치명이지만 확실하지 않음 → 차단 없음). "누구나 읽거나 추가할 수 있는 정책" 안내 |
+| T97 | `for insert with check (true)` | T96과 같음 |
+| T98 | `for update using (true)` / `for delete using (true)` | `security/rls-open-write`(높음, semi) `needs_review` 0.5, "누구나 수정·삭제할 수 있는 정책". `security/db-access`는 영향 없음 |
+| T99 | `for`가 없는 정책 (`all`) + `using (true)` | `security/rls-open-write` `needs_review` |
+| T100 | `using (auth.uid() = id)` (fixture `clean-app`), 주석 속 `using (true)`, 다른 스키마 | 열린 정책 아님 → `pass` |
+

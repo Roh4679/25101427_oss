@@ -9,6 +9,25 @@ const TABLE = String.raw`(?:(?:"?public"?)\.)?"?([A-Za-z_][\w]*)"?`;
 const CREATE = new RegExp(String.raw`\bcreate\s+table\s+(?:if\s+not\s+exists\s+)?(?:(?:"?(\w+)"?)\.)?"?([A-Za-z_]\w*)"?`, "gi");
 const RLS = new RegExp(String.raw`\balter\s+table\s+(?:if\s+exists\s+)?(?:only\s+)?${TABLE}\s+(enable|disable)\s+row\s+level\s+security`, "gi");
 
+// create policy "이름" on [public.]테이블 [as permissive] [for 명령] [to 역할] [using (...)] [with check (...)];
+const POLICY = new RegExp(String.raw`\bcreate\s+policy\s+(?:"[^"]*"|\w+)\s+on\s+(?:(?:"?(\w+)"?)\.)?"?([A-Za-z_]\w*)"?([^;]*);`, "gi");
+const OPEN_CLAUSE = /\busing\s*\(\s*true\s*\)|\bwith\s+check\s*\(\s*true\s*\)/i;
+
+export type PolicyCommand = "select" | "insert" | "update" | "delete" | "all";
+
+// 조건이 true뿐인 정책 = 누구나 그 명령을 쓸 수 있다
+export function openPolicies(migrations: SourceFile[]): ({ table: string; command: PolicyCommand } & Loc)[] {
+  return migrations.flatMap((f) => {
+    const sql = stripSql(f.content ?? "");
+    const line = lineIndex(sql);
+    return [...sql.matchAll(POLICY)].flatMap((m) => {
+      if ((m[1] ?? "public").toLowerCase() !== "public" || !OPEN_CLAUSE.test(m[3]!)) return [];
+      const command = (m[3]!.match(/\bfor\s+(select|insert|update|delete|all)\b/i)?.[1]?.toLowerCase() ?? "all") as PolicyCommand;
+      return [{ table: m[2]!.toLowerCase(), command, file: f.path, line: line(m.index) }];
+    });
+  });
+}
+
 export function tablesWithoutRls(migrations: SourceFile[]): ({ table: string } & Loc)[] {
   const created = new Map<string, Loc>();
   const enabled = new Map<string, boolean>();
@@ -84,6 +103,7 @@ export const databaseDetector: Detector = {
     return [
       { key: "supabase_migrations", value: migrations.map((f) => f.path) },
       { key: "supabase_tables_without_rls", value: tablesWithoutRls(migrations) },
+      { key: "supabase_open_policies", value: openPolicies(migrations) },
       { key: "supabase_from_calls", value: from_calls },
       { key: "service_role_in_client", value: service_role },
       { key: "firebase_open_rules", value: ctx.files.flatMap(firebaseOpenRules) },

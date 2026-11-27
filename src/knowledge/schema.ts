@@ -12,7 +12,13 @@ const pageRef = z.object({ kind: pageKind.optional(), match: z.array(z.string())
 const factRef = z.string().min(1);
 const level = z.number().int().min(1).max(3);
 
-export type Condition = string | { all: Condition[] } | { any: Condition[] } | { not: Condition } | { fact: string; eq: unknown };
+export type Condition =
+  | string
+  | { all: Condition[] }
+  | { any: Condition[] }
+  | { not: Condition }
+  | { fact: string; eq: unknown }
+  | { fact: string; field: string; in: unknown[] };
 
 export const conditionSchema: z.ZodType<Condition> = z.lazy(() =>
   z.union([
@@ -21,6 +27,7 @@ export const conditionSchema: z.ZodType<Condition> = z.lazy(() =>
     z.object({ any: z.array(conditionSchema).min(1) }).strict(),
     z.object({ not: conditionSchema }).strict(),
     z.object({ fact: factRef, eq: z.unknown() }).strict(),
+    z.object({ fact: factRef, field: z.string().min(1), in: z.array(z.unknown()).min(1) }).strict(),
   ]),
 );
 

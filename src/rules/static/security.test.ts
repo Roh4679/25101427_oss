@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { loadServices } from "../../knowledge/services.js";
 import { gitignoreMatcher } from "../../scanner/gitignore.js";
 import type { Detector, SourceFile } from "../../types.js";
-import { databaseDetector, tablesWithoutRls } from "./database.js";
+import { databaseDetector, openPolicies, tablesWithoutRls } from "./database.js";
 import { patternsDetector } from "./patterns.js";
 import { mask, secretsDetector } from "./secrets.js";
 
@@ -149,6 +149,32 @@ create table private.logs (id int);
       { file: "firestore.rules", line: 2 },
       { file: "database.rules.json", line: 1 },
     ]);
+  });
+});
+
+describe("using (true) 정책 (T96~T100)", () => {
+  const sql = `create table posts (id int);
+alter table posts enable row level security;
+create policy "모두 읽기" on public.posts for select using (true);
+create policy "모두 쓰기" on posts for insert with check ( true );
+create policy "모두 수정" on posts for update using (true);
+create policy "모두 삭제" on posts as permissive for delete to anon using (true);
+create policy "전부" on posts using (true);
+create policy "본인만" on posts for update using (auth.uid() = id);
+-- create policy "주석" on posts for select using (true);
+create policy "다른 스키마" on private.logs for select using (true);`;
+
+  it("명령별로 찾고, 본인 조건·주석·다른 스키마는 제외", () => {
+    expect(openPolicies([file("supabase/migrations/1.sql", sql)]).map((p) => `${p.command}:${p.line}`)).toEqual([
+      "select:3",
+      "insert:4",
+      "update:5",
+      "delete:6",
+      "all:7",
+    ]);
+  });
+  it("T100 clean-app처럼 auth.uid() 조건뿐이면 없음", () => {
+    expect(openPolicies([file("a.sql", 'create policy "본인" on profiles for select using (auth.uid() = id);')])).toEqual([]);
   });
 });
 

@@ -21,6 +21,7 @@
 | `{ any: [조건...] }` | 하나 이상 참 |
 | `{ not: 조건 }` | 부정 |
 | `{ fact: key, eq: 값 }` | Fact 값이 정확히 같음 (예: `{ fact: scan_mode, eq: live }`) |
+| `{ fact: key, field: 경로, in: [값...] }` | 배열 원소 중 `field` 값이 목록에 든 것이 하나라도 있음 (예: `{ fact: supabase_open_policies, field: command, in: [select, insert] }`) |
 
 **참 판정**: Fact 없음 → 거짓. `true` → 참. 배열은 비어 있지 않으면 참. 문자열은 비어 있지 않으면 참. 숫자는 0이 아니면 참. 그 밖의 객체는 참.
 
@@ -172,6 +173,7 @@ trace: ["개인정보처리방침", "privacy policy"]   # any_of와 같은 원�
 |---|---|---|---|---|---|---|---|
 | `security/secret-exposure` | SEC-01 | security | auto | 2·3·3 | 항상 | — | 5 |
 | `security/db-access` | SEC-02 | security | auto | 2·3·3 | `uses_supabase` 또는 `uses_firebase` | — | 5 |
+| `security/rls-open-write` | SEC-02 (누구나 수정·삭제) | security | semi | 2·3·2 | `uses_supabase` | — | 5 (정답지 추가 승인 후) |
 | `security/dangerous-patterns` | SEC-03 | security | semi | 2·3·2 | 항상 | — | 5 |
 | `security/dependencies` | SEC-04 | security | auto | 2·3·2 | `dependency_audit` (네트워크 켬) | — | 7 |
 | `privacy/policy-page` | PRIV-01 | privacy | auto | 3·2·3 | `collects_personal_info` | — | 4 |
