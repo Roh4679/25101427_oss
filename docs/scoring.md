@@ -266,3 +266,14 @@
 
 RLS만 켜고 정책이 없는 테이블은 아무도 접근할 수 없어 안전하므로 `pass`로 본다 (정책 유무는 따로 보지 않는다).
 
+**공개용 키 이름 허용 목록과 비밀값 판단 (`security/secret-exposure`)**
+
+| # | 입력 | 기대 결과 |
+|---|---|---|
+| T90 | `NEXT_PUBLIC_FIREBASE_API_KEY`, `VITE_SUPABASE_PUBLISHABLE_KEY` | 비밀값 아님 (오탐 수정) → `pass` |
+| T91 | `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` | 비밀값 아님, `public_keys_needing_restriction`에 기록 |
+| T92 | `FIREBASE_PRIVATE_KEY`, `DATABASE_URL` (서버 변수) / `VITE_PRIVATE_KEY` | `env_file` / `public_env` → 차단 |
+| T93 | 이름과 무관하게 값이 `postgres://아이디:비밀번호@호스트` (`.env`의 `NEXT_PUBLIC_CONN`, 코드 문자열) | `public_env`·`hardcoded` → 차단 |
+| T94 | `https://api.example.com/v1`, `mailto:help@example.com` | 비밀값 아님 |
+| T95 | T91만 있음 | 키 노출 `needs_review` 0.5, `mitigated`, 차단 없음. "허용 도메인(HTTP 리퍼러)과 API 제한을 설정했는지 확인하세요" |
+

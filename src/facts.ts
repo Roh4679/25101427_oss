@@ -14,7 +14,7 @@ export const FACT_KEYS = new Set([
   // 5. 접근성
   "img_missing_alt",
   // 6. 보안
-  "git_tracked", "gitignored", "env_files", "env_files_exposed", "secrets_exposed",
+  "git_tracked", "gitignored", "env_files", "env_files_exposed", "secrets_exposed", "public_keys_needing_restriction",
   "supabase_migrations", "supabase_tables_without_rls", "supabase_from_calls", "service_role_in_client", "firebase_open_rules", "dangerous_patterns",
   // 7. 렌더링
   "axe_violations", "contrast_failures", "keyboard_forms", "cookies_before_consent",

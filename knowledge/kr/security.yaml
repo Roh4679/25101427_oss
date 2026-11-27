@@ -11,6 +11,10 @@
     - falsy: env_files_exposed
     # 소스에 직접 쓴 키, 클라이언트로 나가는 변수(NEXT_PUBLIC_·VITE_)의 비밀값
     - none: { fact: secrets_exposed, field: via, in: [hardcoded, public_env] }
+    # 공개되지만 제한이 필요한 키 (Google Maps 등, services.yaml env_names.restricted) → 확인 필요
+    - review_if:
+        when: public_keys_needing_restriction
+        message: 공개용이지만 사용 제한이 필요한 키(Google Maps 등)가 있습니다. 허용 도메인(HTTP 리퍼러)과 API 제한을 설정했는지 확인하세요.
   message: API 키·비밀값이 노출될 수 있는 곳에 있습니다.
   fix: >-
     키를 즉시 폐기하고 새로 발급하세요. 비밀값은 서버 전용 환경 변수(NEXT_PUBLIC_·VITE_ 접두사 없이)에 두고,

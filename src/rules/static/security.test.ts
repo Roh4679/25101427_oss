@@ -1,4 +1,6 @@
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { loadServices } from "../../knowledge/services.js";
 import { gitignoreMatcher } from "../../scanner/gitignore.js";
 import type { Detector, SourceFile } from "../../types.js";
 import { databaseDetector, tablesWithoutRls } from "./database.js";
@@ -8,6 +10,7 @@ import { mask, secretsDetector } from "./secrets.js";
 const file = (path: string, content = ""): SourceFile => ({ path, content });
 const run = (d: Detector, files: SourceFile[]) =>
   Object.fromEntries(d.detect({ root: "/", files, mode: "static" }).map((f) => [f.key, f.value])) as Record<string, unknown>;
+const NAMES = loadServices(join(import.meta.dirname, "../../../knowledge/kr/services.yaml")).env_names;
 // 테스트용 키는 조립해서 만든다 (저장소에 키 모양 문자열을 두지 않는다, fixtures/README.md)
 const KEY = ["sk", "proj", "TESTONLY", "x".repeat(24)].join("-");
 
@@ -28,7 +31,7 @@ describe(".gitignore 해석 (git 없을 때)", () => {
 
 describe("secrets (T64~T71)", () => {
   const detect = (files: SourceFile[], tracked?: string[], ignoredPaths: string[] = []) =>
-    run(secretsDetector({ tracked, ignored: (p) => ignoredPaths.includes(p) }), files);
+    run(secretsDetector({ tracked, ignored: (p) => ignoredPaths.includes(p) }, NAMES), files);
 
   it("T64 무시되고 추적되지 않은 .env → 노출 없음", () => {
     expect(detect([file(".env", "A=1")], [], [".env"]).env_files_exposed).toEqual([]);
@@ -64,6 +67,36 @@ describe("secrets (T64~T71)", () => {
     ], [], [".env"]);
     expect(out.secrets_exposed).toEqual([{ rule: "env:SUPABASE_SERVICE_ROLE_KEY", masked: "abc****", via: "env_file", file: ".env", line: 3 }]);
   });
+  it("T90 공개용 이름 허용 목록: Firebase API_KEY·Supabase publishable은 비밀값이 아니다 (오탐 수정)", () => {
+    const out = detect([file(".env", "NEXT_PUBLIC_FIREBASE_API_KEY=AIzaSyTEST\nVITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_x\nNEXT_PUBLIC_MYAPP_FIREBASE_API_KEY=x")], [], [".env"]);
+    expect(out.secrets_exposed).toEqual([]);
+  });
+  it("T91 제한이 필요한 공개 키(Google Maps)는 비밀값이 아니라 확인 필요 대상", () => {
+    const out = detect([file(".env", "NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=AIzaSyTEST")], [], [".env"]);
+    expect(out.secrets_exposed).toEqual([]);
+    expect(out.public_keys_needing_restriction).toEqual([{ name: "NEXT_PUBLIC_GOOGLE_MAPS_API_KEY", file: ".env", line: 1 }]);
+  });
+  it("T92 PRIVATE_KEY·DATABASE_URL 이름은 비밀값 (클라이언트 접두사면 public_env)", () => {
+    const out = detect([file(".env", "FIREBASE_PRIVATE_KEY=abc\nDATABASE_URL=file:./dev.db\nVITE_PRIVATE_KEY=abc")], [], [".env"]);
+    expect((out.secrets_exposed as { rule: string; via: string }[]).map((s) => [s.rule, s.via])).toEqual([
+      ["env:FIREBASE_PRIVATE_KEY", "env_file"],
+      ["env:DATABASE_URL", "env_file"],
+      ["env:VITE_PRIVATE_KEY", "public_env"],
+    ]);
+  });
+  it("T93 값에 '://아이디:비밀번호@'가 있으면 이름과 무관하게 비밀값 (.env·코드 모두)", () => {
+    const url = ["postgres://admin", "TESTONLY@db.example.com:5432/app"].join(":");
+    const out = detect([file(".env", `NEXT_PUBLIC_CONN=${url}`), file("src/db.ts", `const c = "${url}";`)], [], [".env"]);
+    expect(out.secrets_exposed).toEqual([
+      { rule: "credentials-in-url", masked: "post****", via: "public_env", file: ".env", line: 1 },
+      { rule: "credentials-in-url", masked: "post****", via: "hardcoded", file: "src/db.ts", line: 1 },
+    ]);
+  });
+  it("T94 비밀번호 없는 주소(https://host/path, user@host)는 비밀값이 아니다", () => {
+    const out = detect([file("src/a.ts", 'const a = "https://api.example.com/v1"; const b = "mailto:help@example.com";')]);
+    expect(out.secrets_exposed).toEqual([]);
+  });
+
   it("주석 속 키는 잡지 않는다, mask는 앞 4자", () => {
     expect(detect([file("src/a.ts", `// ${KEY}`)]).secrets_exposed).toEqual([]);
     expect(mask("abcdefgh")).toBe("abcd****");

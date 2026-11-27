@@ -281,18 +281,25 @@ trace: ["개인정보처리방침", "privacy policy"]   # any_of와 같은 원�
 
 ```yaml
 # 해외 서버로 이전될 수 있는 서비스. 지역 선택이 가능한 서비스가 있으므로 국가는 적지 않는다.
-- name: Supabase                       # 리포트에 보이는 이름
-  packages: ["@supabase/*"]            # dependencies 이름. * 는 접두어 일치
-  hosts: ["*.supabase.co"]             # 코드에 나온 호출 호스트
-  files: ["supabase/config.toml"]      # 있으면 사용으로 본다 (선택)
-- name: OpenAI
-  packages: ["openai"]
-  hosts: ["api.openai.com"]
+services:
+  - name: Supabase                     # 리포트에 보이는 이름
+    packages: ["@supabase/*"]          # dependencies 이름. * 는 접두어 일치
+    hosts: ["*.supabase.co"]           # 코드에 나온 호출 호스트
+    files: ["supabase/**"]             # 있으면 사용으로 본다 (선택)
+  - name: OpenAI
+    packages: ["openai"]
+    hosts: ["api.openai.com"]
+
+# 환경 변수 이름 (키 노출 판정, facts.md 6장)
+env_names:
+  public: [FIREBASE_API_KEY, SUPABASE_ANON_KEY, SUPABASE_PUBLISHABLE_KEY]   # 공개용: 비밀값으로 보지 않음
+  restricted: [GOOGLE_MAPS_API_KEY]                                        # 공개되지만 제한 필요: 확인 필요
 ```
 
 - `name`과 `packages`·`hosts`·`files` 중 하나 이상은 필수.
 - 문구는 항상 "해외 서버로 이전될 수 있음"이다. 실제 이전 여부·국가는 사용자가 확인한다 (`privacy/overseas-transfer`는 `semi`).
 - 패키지 이름은 추측하지 않는다. 항목을 추가할 때 npm에 실제로 있는지 확인한다.
+- `env_names`는 클라이언트 접두사(`NEXT_PUBLIC_`, `VITE_`, `REACT_APP_`, `EXPO_PUBLIC_`, `NUXT_PUBLIC_`, `PUBLIC_`)를 뗀 이름이 같거나 `_이름`으로 끝나면 맞는다 (`NEXT_PUBLIC_MYAPP_FIREBASE_API_KEY` → `FIREBASE_API_KEY`).
 
 ## 7. 표시 이름 `knowledge/kr/labels.yaml`
 

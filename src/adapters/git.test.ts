@@ -5,7 +5,10 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { secretsDetector } from "../rules/static/secrets.js";
 import { collectFiles } from "../scanner/files.js";
+import { loadServices } from "../knowledge/services.js";
 import { readGit } from "./git.js";
+
+const NAMES = loadServices(join(import.meta.dirname, "../../knowledge/kr/services.yaml")).env_names;
 
 // 실제 git으로 확인한다 (목 금지, docs/scoring.md T76~T79). git이 없으면 이유를 남기고 건너뛴다.
 const hasGit = (() => {
@@ -37,7 +40,7 @@ function exposed(root: string) {
   const files = collectFiles(root);
   const git = readGit(root, files.map((f) => f.path))!;
   const ignored = new Set(git.ignored);
-  const facts = secretsDetector({ tracked: git.tracked, ignored: (p) => ignored.has(p) }).detect({ root, files, mode: "static" });
+  const facts = secretsDetector({ tracked: git.tracked, ignored: (p) => ignored.has(p) }, NAMES).detect({ root, files, mode: "static" });
   return { git, exposed: facts.find((f) => f.key === "env_files_exposed")!.value };
 }
 

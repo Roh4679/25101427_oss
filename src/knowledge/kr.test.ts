@@ -105,6 +105,12 @@ describe("knowledge/kr 항목별 통과·실패", () => {
     expect(r["security/secret-exposure"]).toMatchObject({ status: "fail", grade: "critical", findings: [{ location: { file: "src/a.ts", line: 3 } }] });
   });
 
+  it("T95 제한이 필요한 공개 키만 있으면 키 노출은 확인 필요 (차단 아님)", () => {
+    const r = status({ public_keys_needing_restriction: [{ name: "NEXT_PUBLIC_GOOGLE_MAPS_API_KEY", file: ".env", line: 1 }] })["security/secret-exposure"]!;
+    expect(r).toMatchObject({ status: "needs_review", mitigated: true });
+    expect(r.findings[0]!.message).toContain("허용 도메인(HTTP 리퍼러)");
+  });
+
   it("security/db-access: 통과 / 실패(RLS 없음) / 확인 필요(SQL 없이 .from()) / Supabase·Firebase 안 쓰면 N/A", () => {
     const base = { uses_supabase: true, supabase_migrations: ["supabase/migrations/1.sql"] };
     expect(status(base)["security/db-access"]!.status).toBe("pass");

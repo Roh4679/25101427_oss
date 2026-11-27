@@ -130,10 +130,13 @@ describe("principle (evidence-dsl.md 9장)", () => {
 
 describe("parseServices", () => {
   it("이름과 대응 정보", () => {
-    expect(parseServices("- name: OpenAI\n  packages: [openai]")).toEqual([{ name: "OpenAI", packages: ["openai"] }]);
+    const env = "env_names: { public: [SUPABASE_ANON_KEY], restricted: [] }";
+    expect(parseServices(`services:\n  - name: OpenAI\n    packages: [openai]\n${env}`).services).toEqual([{ name: "OpenAI", packages: ["openai"] }]);
   });
   it("T56b 대응 정보가 없거나 이름이 없으면 오류", () => {
-    expect(() => parseServices("- name: X")).toThrow(KnowledgeError);
-    expect(() => parseServices("- packages: [openai]")).toThrow(KnowledgeError);
+    const env = "env_names: { public: [], restricted: [] }";
+    expect(() => parseServices(`services:\n  - name: X\n${env}`)).toThrow(KnowledgeError);
+    expect(() => parseServices(`services:\n  - packages: [openai]\n${env}`)).toThrow(KnowledgeError);
+    expect(() => parseServices(`services: []\nenv_names: { public: [lower_case], restricted: [] }`)).toThrow(KnowledgeError);
   });
 });

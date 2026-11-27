@@ -6,14 +6,16 @@ import { collectFiles } from "./files.js";
 import { servicesDetector } from "./services.js";
 
 const TABLE = parseServices(`
-- name: Supabase
-  packages: ["@supabase/*"]
-  hosts: ["*.supabase.co"]
-  files: ["supabase/**"]
-- name: OpenAI
-  packages: ["openai"]
-  hosts: ["api.openai.com"]
-`);
+services:
+  - name: Supabase
+    packages: ["@supabase/*"]
+    hosts: ["*.supabase.co"]
+    files: ["supabase/**"]
+  - name: OpenAI
+    packages: ["openai"]
+    hosts: ["api.openai.com"]
+env_names: { public: [], restricted: [] }
+`).services;
 
 const detect = (files: SourceFile[]) => servicesDetector(TABLE).detect({ root: "/", files, mode: "static" })[0]!.value;
 const pkg = (deps: Record<string, string>): SourceFile => ({ path: "package.json", content: JSON.stringify({ dependencies: deps }) });
@@ -37,7 +39,7 @@ describe("servicesDetector", () => {
 });
 
 describe("knowledge/kr/services.yaml", () => {
-  const table = loadServices(join(import.meta.dirname, "../../knowledge/kr/services.yaml"));
+  const table = loadServices(join(import.meta.dirname, "../../knowledge/kr/services.yaml")).services;
   const fixture = (name: string) => {
     const root = join(import.meta.dirname, "../../fixtures/intentional", name);
     return servicesDetector(table).detect({ root, files: collectFiles(root), mode: "static" })[0]!.value;

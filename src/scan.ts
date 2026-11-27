@@ -6,7 +6,7 @@ import { evaluate } from "./knowledge/evaluate.js";
 import { loadKnowledge } from "./knowledge/loader.js";
 import { ARTICLE_TODO, type Obligation } from "./knowledge/schema.js";
 import { loadLabels, type Labels } from "./knowledge/labels.js";
-import { loadServices, type Service } from "./knowledge/services.js";
+import { loadServices, type EnvNames, type Service } from "./knowledge/services.js";
 import { collectFiles } from "./scanner/files.js";
 import { projectDetector, readPackageJson } from "./scanner/project.js";
 import { servicesDetector } from "./scanner/services.js";
@@ -36,15 +36,14 @@ const KNOWLEDGE_DIR = fileURLToPath(new URL("../knowledge/kr/", import.meta.url)
 export interface Knowledge {
   obligations: Obligation[];
   services: Service[];
+  envNames: EnvNames;
   labels: Labels;
 }
 
-export const loadDefaultKnowledge = (): Knowledge => ({
-  obligations: loadKnowledge(KNOWLEDGE_DIR),
-  services: loadServices(`${KNOWLEDGE_DIR}services.yaml`),
-  labels: loadLabels(`${KNOWLEDGE_DIR}labels.yaml`),
-});
-
+export const loadDefaultKnowledge = (): Knowledge => {
+  const { services, env_names } = loadServices(`${KNOWLEDGE_DIR}services.yaml`);
+  return { obligations: loadKnowledge(KNOWLEDGE_DIR), services, envNames: env_names, labels: loadLabels(`${KNOWLEDGE_DIR}labels.yaml`) };
+};
 // 적용된(N/A가 아닌) 의무 중 조문을 사람이 아직 확인하지 않은 것
 export const unverifiedArticles = (results: Result[]) =>
   results.filter((r) => r.status !== "na" && r.principle?.article === ARTICLE_TODO).map((r) => r.id);
@@ -76,7 +75,7 @@ export function scan(root: string, config: Config, options: ScanOptions, kb: Kno
 
   const detectors = [
     projectDetector, servicesDetector(kb.services), routesDetector(config), textDetector, formsDetector, scriptsDetector, imagesDetector,
-    secretsDetector({ tracked: git?.tracked, ignored }), databaseDetector, patternsDetector,
+    secretsDetector({ tracked: git?.tracked, ignored }, kb.envNames), databaseDetector, patternsDetector,
   ];
   const facts = [...gitFacts, ...detectors.flatMap((d) => d.detect(ctx))];
 

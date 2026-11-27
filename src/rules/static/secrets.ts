@@ -1,3 +1,4 @@
+import { envNameIn, type EnvNames } from "../../knowledge/services.js";
 import { isCodeFile, isHtmlFile, lex, lineIndex } from "../../scanner/source.js";
 import type { Detector, SourceFile } from "../../types.js";
 
@@ -14,12 +15,12 @@ const VALUE_RULES: { rule: string; re: RegExp }[] = [
   { rule: "aws-access-key-id", re: /\b(?:AKIA|ASIA)[A-Z0-9]{16}\b/ },
   { rule: "github-token", re: /\bgh[pousr]_[A-Za-z0-9]{30,}\b/ },
   { rule: "private-key", re: /-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----/ },
+  // 이름과 무관하게: 주소 안의 "://아이디:비밀번호@" (DB 접속 주소 등)
+  { rule: "credentials-in-url", re: /\b[a-z][a-z0-9+.-]*:\/\/[^\s:/@'"`]+:[^\s@/'"`]+@/i },
 ];
 
-// 변수 이름으로 알아보는 비밀값 (.env)
-const SECRET_NAME = /SECRET|SERVICE_ROLE|PRIVATE_KEY|API_KEY|ACCESS_TOKEN|AUTH_TOKEN|PASSWORD/i;
-// 공개용으로 설계된 변수 (클라이언트에 노출돼도 되는 값)
-const PUBLIC_BY_DESIGN = /ANON_KEY|PUBLISHABLE|_URL$|MEASUREMENT_ID|FIREBASE_(?:API_KEY|AUTH_DOMAIN|PROJECT_ID|STORAGE_BUCKET|MESSAGING_SENDER_ID|APP_ID)/i;
+// 변수 이름으로 알아보는 비밀값 (.env). 공개용 이름은 services.yaml env_names.public에서 뺀다.
+const SECRET_NAME = /SECRET|SERVICE_ROLE|PRIVATE_KEY|API_KEY|ACCESS_TOKEN|AUTH_TOKEN|PASSWORD|DATABASE_URL/i;
 const CLIENT_PREFIX = /^(?:NEXT_PUBLIC_|VITE_|REACT_APP_|EXPO_PUBLIC_)/;
 
 const EXAMPLE_ENV = /(?:^|\/)\.env\.(?:example|sample|template)$/;
@@ -29,18 +30,23 @@ const valueRule = (v: string) => VALUE_RULES.find((r) => r.re.test(v));
 
 type Secret = { rule: string; masked: string; via: "hardcoded" | "public_env" | "env_file"; file: string; line: number };
 
-function envSecrets(f: SourceFile): Secret[] {
+function envVars(f: SourceFile): { name: string; value: string; line: number }[] {
   return (f.content ?? "").split(/\r?\n/).flatMap((raw, i) => {
     const m = raw.match(/^\s*(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)$/);
     if (!m) return [];
-    const [, name, rawValue] = m as unknown as [string, string, string];
-    const value = rawValue.trim().replace(/^(['"])(.*)\1$/, "$2");
-    if (!value) return [];
+    const value = m[2]!.trim().replace(/^(['"])(.*)\1$/, "$2");
+    return value ? [{ name: m[1]!, value, line: i + 1 }] : [];
+  });
+}
+
+function envSecrets(f: SourceFile, names: EnvNames): Secret[] {
+  return envVars(f).flatMap(({ name, value, line }) => {
     const byValue = valueRule(value);
-    const byName = SECRET_NAME.test(name) && !PUBLIC_BY_DESIGN.test(name);
+    // 값이 비밀값 형식이면 이름과 무관하게, 아니면 이름으로 (공개용·제한 필요 이름은 제외)
+    const byName = SECRET_NAME.test(name) && !envNameIn(name, names.public) && !envNameIn(name, names.restricted);
     if (!byValue && !byName) return [];
     const via = CLIENT_PREFIX.test(name) ? "public_env" : "env_file";
-    return [{ rule: byValue?.rule ?? `env:${name}`, masked: mask(value), via, file: f.path, line: i + 1 }];
+    return [{ rule: byValue?.rule ?? `env:${name}`, masked: mask(value), via, file: f.path, line }];
   });
 }
 
@@ -56,7 +62,7 @@ function hardcodedSecrets(f: SourceFile): Secret[] {
   });
 }
 
-export function secretsDetector(git: { tracked?: string[]; ignored: (path: string) => boolean }): Detector {
+export function secretsDetector(git: { tracked?: string[]; ignored: (path: string) => boolean }, names: EnvNames): Detector {
   return {
     id: "secrets",
     detect(ctx) {
@@ -67,8 +73,14 @@ export function secretsDetector(git: { tracked?: string[]; ignored: (path: strin
         e.git_tracked === true ? [{ reason: "tracked", file: e.path, line: 1 }] : !e.gitignored ? [{ reason: "not_ignored", file: e.path, line: 1 }] : [],
       );
       const code = ctx.files.filter((f) => f.content !== undefined && (isCodeFile(f.path) || isHtmlFile(f.path)));
-      const secrets_exposed = [...envs.flatMap(envSecrets), ...code.flatMap(hardcodedSecrets)];
+      const secrets_exposed = [...envs.flatMap((f) => envSecrets(f, names)), ...code.flatMap(hardcodedSecrets)];
+      const public_keys_needing_restriction = envs.flatMap((f) =>
+        envVars(f)
+          .filter((v) => envNameIn(v.name, names.restricted))
+          .map((v) => ({ name: v.name, file: f.path, line: v.line })),
+      );
       return [
+        { key: "public_keys_needing_restriction", value: public_keys_needing_restriction },
         { key: "env_files", value: env_files },
         { key: "env_files_exposed", value: env_files_exposed },
         { key: "secrets_exposed", value: secrets_exposed },
