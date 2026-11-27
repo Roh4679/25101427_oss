@@ -37,7 +37,7 @@ interface Result {
   weight: number;
   mitigated: boolean;              // 치명 항목이지만 근거가 불확실해 차단하지 않음 (scoring.md 3장)
   confirmed: boolean;              // confirmations 반영 여부
-  naReason?: "trigger" | "disabled" | "mode";
+  naReason?: "trigger" | "disabled" | "mode" | "dependency";  // dependency: 상위 의무(depends_on)가 pass가 아님
   message?: string;                // 통과가 아니면 YAML의 message
   fix?: string;
   principle?: { law: string; article: string; source: string; verified_at: string };

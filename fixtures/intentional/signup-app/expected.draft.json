@@ -12,13 +12,13 @@
     "security/dangerous-patterns": "pass",
     "security/dependencies": "na",
     "privacy/policy-page": "fail",
-    "privacy/policy-contents": "needs_review",
+    "privacy/policy-contents": "na",
     "privacy/overseas-transfer": "na",
-    "privacy/analytics-disclosure": "fail",
+    "privacy/analytics-disclosure": "na",
     "privacy/embed-disclosure": "na",
     "privacy/consent-checkbox": "fail",
     "privacy/minimal-collection": "needs_review",
-    "privacy/cookie-consent": "needs_review",
+    "privacy/cookie-consent": "na",
     "commerce/business-info": "na",
     "commerce/refund-policy": "na",
     "legal/terms-page": "pass",
@@ -35,5 +35,5 @@
     "privacy/policy-page",
     "privacy/consent-checkbox"
   ],
-  "score": 51
+  "score": 56
 }

@@ -24,7 +24,7 @@
 
 ## 3. 계산 순서
 
-1. **N/A**: trigger 거짓, 설정 `disable`, live 전용 의무를 정적 모드로 실행 → `na`. 계산에서 뺀다.
+1. **N/A**: trigger 거짓, 설정 `disable`, live 전용 의무를 정적 모드로 실행 → `na`. 계산에서 뺀다. (하위 의무의 N/A는 5번에서 정한다)
 2. **위험도·등급·가중치**: `risk = L×I×P`.
 
    | risk | grade | 가중치 (`grade` 모드) |
@@ -57,10 +57,11 @@
    치명 항목은 부분 통과 비율(예: 사업자 정보 4개 중 2개)을 점수로 쓰지 않는다. 확실하면 0, 아니면 0.5다.
 
 4. **확인 반영**: `confirmations[id]`가 `pass`면 `pass` 1, `fail`이면 `fail` 0. `confirmed: true`. 쓸 수 있는 의무는 `check: semi`이거나 grade가 critical인 의무다. 그 밖의 의무에 쓰면 경고하고 무시한다.
-5. **총점**: `floor(Σ(가중치 × 점수) / Σ(가중치) × 100)`. 적용 항목이 없으면 100.
-6. **차단**: critical이면서 상태가 `fail`인 의무가 하나라도 있으면 `blocked`, 총점 = `min(총점, 59)`. 차단을 일으킨 id를 `blockers`에 넣는다.
-7. **판정**: 차단이 아니면 90 이상 `ready`, 70 ~ 89 `ready_with_fixes`, 70 미만 `needs_work`.
-8. **영역 점수**: 5번과 **같은 식, 같은 내림**을 영역별로 적용한다. 적용 항목이 없는 영역은 `null`. 차단 상한(59)은 총점에만 적용한다.
+5. **의존 반영**: `depends_on`이 있는 의무는 상위 의무의 최종 상태(4번까지 반영)가 `pass`가 아니면 `na`(`naReason: "dependency"`)로 바꾼다. 상위 의무부터 차례로 처리한다. 하위 의무의 `confirmations`는 이때 무시한다.
+6. **총점**: `floor(Σ(가중치 × 점수) / Σ(가중치) × 100)`. 적용 항목이 없으면 100.
+7. **차단**: critical이면서 상태가 `fail`인 의무가 하나라도 있으면 `blocked`, 총점 = `min(총점, 59)`. 차단을 일으킨 id를 `blockers`에 넣는다.
+8. **판정**: 차단이 아니면 90 이상 `ready`, 70 ~ 89 `ready_with_fixes`, 70 미만 `needs_work`.
+9. **영역 점수**: 6번과 **같은 식, 같은 내림**을 영역별로 적용한다. 적용 항목이 없는 영역은 `null`. 차단 상한(59)은 총점에만 적용한다.
 
 ### 내림을 쓰는 이유
 
@@ -73,11 +74,15 @@
 | 의무 | 흔적 패턴(`trace`) | 흔적 없음 | 흔적 있음 + 장치 확인 안 됨 | 통과 |
 |---|---|---|---|---|
 | `privacy/policy-page` | "개인정보처리방침", "privacy policy" | 차단 | 확인 필요 | 페이지 또는 그 텍스트의 링크(외부 포함) |
-| `commerce/refund-policy` | "청약철회", "환불정책", "환불규정" | 차단 | 확인 필요 | 환불 페이지, 또는 페이지 본문·푸터에 흔적 (전용 페이지 불필요) |
+| `commerce/refund-policy` | "청약철회", "환불정책", "환불규정", "환불안내", "취소·환불", "교환·반품", "교환/반품", "반품안내" ("환불" 단독은 아님) | 차단 | 확인 필요 | 환불 페이지, 또는 페이지 본문·푸터에 흔적 (전용 페이지 불필요) |
 | `commerce/business-info` | "사업자등록번호", "통신판매업", 사업자등록번호 형식 | 차단 | 확인 필요 | 상호·대표자·사업자등록번호·통신판매업 4개 모두 |
 | `security/*`, `privacy/consent-checkbox` | 없음 (관찰된 사실로 판정) | — | — | 실패하면 항상 확실 → 차단 |
 
 `--live` 모드라도 흔적이 하나라도 있으면 차단하지 않는다. 크롤링하지 못한 화면(로그인 뒤 결제 화면 등)에 고지가 있을 수 있기 때문이다. 정적 코드에 흔적이 남아 있으면 렌더링 결과에 없어도 "확인 필요"다.
+
+설정 파일 `pages`에 지정한 페이지는 흔적 판정보다 우선해 통과한다 (`evidence-dsl.md` 3.5). 흔적 패턴 비교에도 띄어쓰기 정규화가 적용된다.
+
+차단 메시지에는 해결 방법을 함께 적는다: 고지를 추가하거나, 이미 다른 곳에 있으면 `signoff.config.json`의 `pages`에 주소를 지정하거나, 직접 확인한 뒤 `confirmations`에 `pass`를 적는다.
 
 ## 5. 필수 테스트 케이스 (`src/score/*.test.ts`, `src/knowledge/*.test.ts`, 3단계에서 작성)
 
@@ -145,3 +150,43 @@
 | T33 | 적용 항목 0개인 영역 | `null` |
 | T34 | `weightMode: raw` | 가중치 = risk |
 | T35 | 종료 코드 | `ready`·`ready_with_fixes` → 0, `needs_work`·`blocked` → 1 |
+
+**하위 의무 (`depends_on`)**
+
+| # | 입력 | 기대 결과 |
+|---|---|---|
+| T36 | 처리방침 `fail` | `policy-contents`, `analytics-disclosure`, `cookie-consent` 등 하위 의무 `na` (`naReason: dependency`), 분모에서 빠짐 (fixture `consent-label-app`, `signup-app`) |
+| T37 | 처리방침 `needs_review` (흔적만 있음) | 하위 의무 `na` |
+| T38 | 처리방침 `pass`, 필수 항목 일부 없음 | `policy-contents` 정상 평가 → `needs_review` s |
+| T39 | 처리방침 `needs_review` + `confirmations: pass` | 상위 `pass` → 하위 정상 평가 |
+| T40 | 처리방침 `na` (개인정보 수집 안 함) | 하위 의무 `na` |
+| T41 | 하위 의무에 `confirmations` | 상위가 `pass`가 아니면 무시 (`na` 유지) |
+| T42 | `depends_on` 대상 id 없음 / 순환 | 지식 베이스 로더 스키마 오류 (종료 코드 2) |
+
+**환불 흔적 추가 패턴** (결제 SDK 있음, 정적, 흔적이 결제 컴포넌트에만 있음)
+
+| # | 입력 | 기대 결과 |
+|---|---|---|
+| T43 | "교환·반품 안내" / "교환/반품" / "반품 안내" / "취소·환불" / "환불 안내" 중 하나 | 흔적 있음 → `needs_review`, 차단 없음 |
+| T44 | T8 (흔적 없음) 차단 시 메시지 | "청약철회(환불) 기간·방법 안내가 보이지 않습니다." + `pages.refundPolicy` 지정, `confirmations: pass` 안내 포함 |
+
+**설정 파일 `pages` 우선순위**
+
+| # | 입력 | 기대 결과 |
+|---|---|---|
+| T45 | `pages.privacyPolicy` = 노션 URL, 프로젝트에 처리방침 흔적 없음 (정적) | `privacy/policy-page` `pass` (흔적 판정보다 우선) |
+| T46 | T45의 하위 의무 `policy-contents` (정적, 외부 본문 못 읽음) | `unknown` → `needs_review` 0.5 |
+| T47 | `pages.refundPolicy` = "/refund", 흔적 없음 | `commerce/refund-policy` `pass` |
+| T48 | T47 + `--live`, "/refund"가 같은 origin에서 404 | `pass` 유지 + "설정에 지정한 페이지를 열 수 없습니다" 경고 |
+| T49 | T47 + `--live`, "/refund"가 200이고 본문에 흔적 | `pass`, 렌더링 본문이 `pages[].text`에 들어감 |
+| T50 | `--live` + `pages.privacyPolicy`가 다른 origin(노션) | 열지 않음, `pass` |
+
+**흔적 매칭의 띄어쓰기 정규화**
+
+| # | 입력 | 기대 결과 |
+|---|---|---|
+| T51 | 링크가 아닌 체크박스 라벨 "개인정보 처리방침에 동의합니다" | 흔적 "개인정보처리방침"과 맞음 → `needs_review` (차단 아님) |
+| T51b | 푸터 링크 텍스트 "개인정보 처리방침" (href 대상 페이지 해석 실패) | `page_exists`의 `link_text` 비교에도 정규화 적용 → `pass` |
+| T52 | 텍스트 "개인정보  처리 방침" (공백 여러 개, NBSP 포함) | 흔적 있음 |
+| T53 | 결제 컴포넌트에 "환불 정책" | 흔적 있음 → `needs_review` |
+| T54 | 텍스트 "교환 · 반품" (가운뎃점 앞뒤 공백) | 흔적 "교환·반품"과 맞음 |

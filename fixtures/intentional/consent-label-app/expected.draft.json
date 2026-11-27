@@ -1,14 +1,18 @@
 {
   "$comment": "초안. 사용자 검토 후 expected.json으로 확정한다.",
   "fixture": "consent-label-app",
-  "options": { "mode": "static", "network": false, "region": "kr" },
+  "options": {
+    "mode": "static",
+    "network": false,
+    "region": "kr"
+  },
   "results": {
     "security/secret-exposure": "pass",
     "security/db-access": "na",
     "security/dangerous-patterns": "pass",
     "security/dependencies": "na",
     "privacy/policy-page": "fail",
-    "privacy/policy-contents": "needs_review",
+    "privacy/policy-contents": "na",
     "privacy/overseas-transfer": "na",
     "privacy/analytics-disclosure": "na",
     "privacy/embed-disclosure": "na",
@@ -27,6 +31,8 @@
     "ux/button-labels": "pass"
   },
   "verdict": "blocked",
-  "blockers": ["privacy/policy-page"],
+  "blockers": [
+    "privacy/policy-page"
+  ],
   "score": 59
 }

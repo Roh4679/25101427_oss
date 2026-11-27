@@ -94,34 +94,61 @@ trace: ["개인정보처리방침", "privacy policy"]   # any_of와 같은 원�
 - 그 의무를 지켰을 때만 나타나는 **좁은 문구**를 쓴다. "개인정보", "환불", "대표" 같은 일반 단어는 쓰지 않는다. 일반 단어가 흔적으로 잡히면 동의 체크박스 문구만 있고 처리방침이 없는 앱이 "확인 필요"로 빠져 CI에서 차단되지 않는다.
 - 치명 등급이면서 `page_exists` 또는 `page_text_contains`를 쓰는 의무는 `trace`가 **반드시** 있어야 한다. 없으면 지식 베이스 로더가 스키마 오류를 낸다.
 
+- 흔적 비교에도 1장의 정규화가 똑같이 적용된다. `trace: ["개인정보처리방침"]`은 "개인정보 처리방침", "개인정보 처리 방침"과도 맞는다.
+
+### 3.4 하위 의무 (`depends_on`)
+
+상위 의무가 확인돼야 의미가 있는 의무는 `depends_on`에 상위 의무 id를 적는다.
+
+```yaml
+- id: privacy/policy-contents
+  depends_on: privacy/policy-page
+```
+
+- 상위 의무의 **최종 상태**(`confirmations` 반영 후)가 `pass`일 때만 하위 의무를 평가한다.
+- 상위가 `fail`, `needs_review`, `partial`, `na`면 하위 의무는 `na`(`naReason: "dependency"`)다. 없는 문서에 부분 점수를 주지 않고, 0점을 줘서 이중으로 감점하지도 않는다.
+- 하위 의무에 `na`가 된 이유를 리포트에 남긴다: "처리방침이 확인되면 평가합니다."
+- `depends_on`의 대상이 없거나 순환하면 지식 베이스 로더가 스키마 오류를 낸다.
+- 상태 결정은 점수 모델이 한다 ([docs/scoring.md](../scoring.md) 3장 5번).
+
+### 3.5 설정 파일 `pages` 지정
+
+`signoff.config.json`의 `pages`에 지정한 페이지는 `PageRoute { source: "config", kind }`로 들어가며, **흔적 판정보다 우선한다.**
+
+- `page_exists`가 `kind`로 바로 맞으므로 통과한다. 이때 `trace`를 보지 않는다 (페이지가 맞았으므로 `certain` 판정 대상이 아니다).
+- 외부 URL(노션 등)은 정적 모드에서 열지 않으므로 `text`가 없다. 그 페이지의 본문을 보는 하위 의무(`page_text_contains`)는 `unknown` → 확인 필요가 된다.
+- `--live` 모드에서 지정한 주소가 `--live` URL과 같은 origin이면 크롤러가 열어 본문을 채운다. 응답이 404·5xx여도 설정이 우선하므로 통과는 유지하되, 리포트에 "설정에 지정한 페이지를 열 수 없습니다" 경고를 남긴다. 다른 origin 주소는 열지 않는다 (`--live`는 사용자가 준 URL만 연다).
+
 ## 4. 1차 의무 목록
 
 기획서 3장·5.2의 항목을 지식 베이스 id로 옮긴 것이다. 법령 내용과 메시지는 YAML에만 쓴다. 기획서 표 하나가 여러 의무로 나뉠 수 있다.
 
-| id | 기획서 | 영역 | check | L·I·P | 적용 조건 | 단계 |
-|---|---|---|---|---|---|---|
-| `security/secret-exposure` | SEC-01 | security | auto | 2·3·3 | 항상 | 5 |
-| `security/db-access` | SEC-02 | security | auto | 2·3·3 | `uses_supabase` 또는 `uses_firebase` | 5 |
-| `security/dangerous-patterns` | SEC-03 | security | semi | 2·3·2 | 항상 | 5 |
-| `security/dependencies` | SEC-04 | security | auto | 2·3·2 | `dependency_audit` (네트워크 켬) | 7 |
-| `privacy/policy-page` | PRIV-01 | privacy | auto | 3·2·3 | `collects_personal_info` | 4 |
-| `privacy/policy-contents` | PRIV-01 필수 항목 | privacy | semi | 3·2·2 | `collects_personal_info` | 4 |
-| `privacy/overseas-transfer` | 4.2 예시 | privacy | semi | 3·2·2 | 개인정보 수집 + 해외 서비스 | 4 |
-| `privacy/analytics-disclosure` | PRIV-02 | privacy | auto | 3·2·2 | `analytics_scripts` | 4 |
-| `privacy/embed-disclosure` | PRIV-03 | privacy | auto | 2·2·2 | `external_embeds` | 4 |
-| `privacy/consent-checkbox` | PRIV-04 | privacy | auto | 3·2·3 | `collects_personal_info` | 4 |
-| `privacy/minimal-collection` | PRIV-05 | privacy | semi | 3·2·2 | `collects_personal_info` | 7 |
-| `privacy/cookie-consent` | PRIV-06 | privacy | semi | 2·2·3 | `analytics_scripts` | 4 (live 증거는 6) |
-| `commerce/business-info` | COM-01 | commerce | semi | 3·2·3 | `payment_sdks` | 7 |
-| `commerce/refund-policy` | COM-02 | commerce | semi | 3·2·3 | `payment_sdks` | 7 |
-| `legal/terms-page` | LEGAL-01 | ux (운영) | auto | 1·2·3 | 항상 | 4 |
-| `advertising/unsupported-claims` | AD-01 | advertising | semi | 3·2·2 | 항상 | 7 |
-| `advertising/fake-reviews` | AD-02 | advertising | semi | 3·2·2 | `review_components` | 7 |
-| `accessibility/img-alt` | A11Y-01 | accessibility | auto | 2·1·3 | `img_missing_alt` | 4 |
-| `accessibility/color-contrast` | A11Y-02 | accessibility | auto | 2·1·3 | `scan_mode = live` | 6 |
-| `accessibility/keyboard-form` | A11Y-03 | accessibility | auto | 2·1·3 | `scan_mode = live` | 6 |
-| `accessibility/axe-summary` | A11Y-04 | accessibility | semi | 2·1·3 | `scan_mode = live` | 6 |
-| `ux/button-labels` | UX-01 | ux | semi | 1·1·3 | 항상 | 7 |
+| id | 기획서 | 영역 | check | L·I·P | 적용 조건 | depends_on | 단계 |
+|---|---|---|---|---|---|---|---|
+| `security/secret-exposure` | SEC-01 | security | auto | 2·3·3 | 항상 | — | 5 |
+| `security/db-access` | SEC-02 | security | auto | 2·3·3 | `uses_supabase` 또는 `uses_firebase` | — | 5 |
+| `security/dangerous-patterns` | SEC-03 | security | semi | 2·3·2 | 항상 | — | 5 |
+| `security/dependencies` | SEC-04 | security | auto | 2·3·2 | `dependency_audit` (네트워크 켬) | — | 7 |
+| `privacy/policy-page` | PRIV-01 | privacy | auto | 3·2·3 | `collects_personal_info` | — | 4 |
+| `privacy/policy-contents` | PRIV-01 필수 항목 | privacy | semi | 3·2·2 | `collects_personal_info` | `privacy/policy-page` | 4 |
+| `privacy/overseas-transfer` | 4.2 예시 | privacy | semi | 3·2·2 | 개인정보 수집 + 해외 서비스 | `privacy/policy-page` | 4 |
+| `privacy/analytics-disclosure` | PRIV-02 | privacy | auto | 3·2·2 | `analytics_scripts` | `privacy/policy-page` | 4 |
+| `privacy/embed-disclosure` | PRIV-03 | privacy | auto | 2·2·2 | `external_embeds` | `privacy/policy-page` | 4 |
+| `privacy/consent-checkbox` | PRIV-04 | privacy | auto | 3·2·3 | `collects_personal_info` | — | 4 |
+| `privacy/minimal-collection` | PRIV-05 | privacy | semi | 3·2·2 | `collects_personal_info` | — | 7 |
+| `privacy/cookie-consent` | PRIV-06 | privacy | semi | 2·2·3 | `analytics_scripts` | `privacy/policy-page` | 4 (live 증거는 6) |
+| `commerce/business-info` | COM-01 | commerce | semi | 3·2·3 | `payment_sdks` | — | 7 |
+| `commerce/refund-policy` | COM-02 | commerce | semi | 3·2·3 | `payment_sdks` | — | 7 |
+| `legal/terms-page` | LEGAL-01 | ux (운영) | auto | 1·2·3 | 항상 | — | 4 |
+| `advertising/unsupported-claims` | AD-01 | advertising | semi | 3·2·2 | 항상 | — | 7 |
+| `advertising/fake-reviews` | AD-02 | advertising | semi | 3·2·2 | `review_components` | — | 7 |
+| `accessibility/img-alt` | A11Y-01 | accessibility | auto | 2·1·3 | `img_missing_alt` | — | 4 |
+| `accessibility/color-contrast` | A11Y-02 | accessibility | auto | 2·1·3 | `scan_mode = live` | — | 6 |
+| `accessibility/keyboard-form` | A11Y-03 | accessibility | auto | 2·1·3 | `scan_mode = live` | — | 6 |
+| `accessibility/axe-summary` | A11Y-04 | accessibility | semi | 2·1·3 | `scan_mode = live` | — | 6 |
+| `ux/button-labels` | UX-01 | ux | semi | 1·1·3 | 항상 | — | 7 |
+
+처리방침 본문을 보는 의무는 모두 `privacy/policy-page`에 의존한다 (3.4).
 
 `privacy/policy-contents`, `privacy/overseas-transfer`는 기획서 5.2 표에 따로 없어 4.2 예시 값(3·2·2)을 따랐다.
 
@@ -155,13 +182,19 @@ trace: ["개인정보처리방침", "privacy policy"]   # any_of와 같은 원�
   factors: { L: 3, I: 2, P: 3 }
   trigger: payment_sdks
   # 법적 요구는 청약철회 정보 고지이지 전용 페이지가 아니다
-  trace: ["청약철회", "환불정책", "환불규정"]
+  # "환불" 단독은 일반 단어라 흔적이 아니다
+  trace: ["청약철회", "환불정책", "환불규정", "환불안내", "취소·환불", "교환·반품", "교환/반품", "반품안내"]
   evidence:
     - any:
         - page_exists: { kind: refund, match: ["refund", "환불정책", "환불규정", "청약철회"] }
         - text_contains: { fact: pages, field: text, any_of: $trace }   # 약관·결제 화면 등 페이지 본문
         - text_contains: { fact: footer_text, any_of: $trace }          # 모든 페이지 하단
   # 흔적이 코드·렌더링 결과 어디에도 없음 → 차단 / 흔적이 컴포넌트에만 있음(예: 로그인 뒤 결제 화면) → 확인 필요
+  message: 청약철회(환불) 기간·방법 안내가 보이지 않습니다.
+  fix: >-
+    약관, 결제 화면 또는 푸터에 청약철회(환불) 기간·방법을 적으세요.
+    이미 다른 곳(외부 페이지 등)에 안내하고 있다면 signoff.config.json의 pages.refundPolicy에 주소를 지정하거나,
+    직접 확인한 뒤 confirmations에 "commerce/refund-policy": "pass"를 적으세요.
 
 - id: commerce/business-info
   category: commerce

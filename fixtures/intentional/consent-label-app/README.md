@@ -9,7 +9,7 @@ Next.js app router로 만든 스터디 매칭 회원가입 서비스. **흔적 �
 | # | 문제 | 위치 | 걸려야 하는 의무 |
 |---|---|---|---|
 | 1 | 개인정보를 받는데 처리방침 페이지·링크·문구가 없음 | `app/`, `app/layout.tsx` 푸터 | `privacy/policy-page` → **차단** (흔적 없음 = 확실한 부재) |
-| 2 | 같은 이유로 처리방침 필수 항목 확인 불가 | — | `privacy/policy-contents` → 확인 필요 |
+| 2 | 같은 이유로 처리방침 필수 항목 확인 불가 | — | `privacy/policy-contents` → `na` (상위 의무가 `pass`가 아님, `depends_on`) |
 
 ## 일부러 넣은 "통과해야 하는" 요소
 
