@@ -136,7 +136,7 @@ export const TEST_KB_YAML = String.raw`
     이미 다른 곳(외부 페이지 등)에 안내하고 있다면 signoff.config.json의 pages.refundPolicy에 주소를 지정하거나,
     직접 확인한 뒤 confirmations에 "commerce/refund-policy": "pass"를 적으세요.
 
-- id: legal/terms-page
+- id: ux/terms-page
   category: ux
   check: auto
   factors: { L: 1, I: 2, P: 3 }

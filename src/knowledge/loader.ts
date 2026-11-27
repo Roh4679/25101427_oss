@@ -65,6 +65,7 @@ const evidencePatterns = (e: Evidence): PatternItem[] => {
 };
 
 export const hintPlaceholders = (hint: string) => [...hint.matchAll(/\{([^}]+)\}/g)].map((m) => m[1]!);
+export const hintLines = (o: Obligation) => (o.parent_hint === undefined ? [] : Array.isArray(o.parent_hint) ? o.parent_hint : [o.parent_hint]);
 
 // 항목 하나만 보고 알 수 있는 오류
 function checkObligation(o: Obligation): string[] {
@@ -84,7 +85,7 @@ function checkObligation(o: Obligation): string[] {
 
   if (o.parent_hint) {
     if (!o.depends_on) errors.push("parent_hint는 depends_on과 함께 써야 합니다");
-    for (const ph of hintPlaceholders(o.parent_hint)) {
+    for (const ph of hintLines(o).flatMap(hintPlaceholders)) {
       const key = ph.split(".")[0]!;
       if (!FACT_KEYS.has(key)) errors.push(`parent_hint의 {${ph}}: facts.md에 없는 Fact`);
     }
@@ -104,7 +105,7 @@ function checkObligation(o: Obligation): string[] {
   if (!o.message) errors.push("message가 필요합니다 (실패·확인 필요일 때 보여 줄 설명)");
   if (!o.fix) errors.push("fix가 필요합니다 (해결 방법)");
 
-  for (const text of [o.message, o.fix, o.parent_hint]) {
+  for (const text of [o.message, o.fix, ...hintLines(o)]) {
     if (text && FORBIDDEN_WORDS.test(text)) errors.push(`메시지에 "위법·불법·위반입니다"를 쓰지 않습니다: ${text}`);
   }
   return errors.map((e) => `${o.id}: ${e}`);

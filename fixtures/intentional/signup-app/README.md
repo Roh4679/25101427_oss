@@ -13,5 +13,5 @@ Next.js **pages router**로 만든 중고거래 회원가입 서비스. 기획�
 
 ## 일부러 넣은 "통과해야 하는" 요소
 
-- 약관 페이지는 있음 → `legal/terms-page` 통과.
+- 약관 페이지는 있음 → `ux/terms-page` 통과.
 - 이미지에 alt 있음, 버튼 문구 명확 → `accessibility/img-alt`, `ux/button-labels` 통과.

@@ -135,13 +135,13 @@ describe("사람 확인, 해당 없음, 비치명 (T19~T23)", () => {
   });
   it("T22 약관 페이지 없음 (비치명 auto) → fail 0, 차단 없음", () => {
     const r = run({});
-    expect(r.byId["legal/terms-page"]).toMatchObject({ status: "fail", score: 0, grade: "medium" });
+    expect(r.byId["ux/terms-page"]).toMatchObject({ status: "fail", score: 0, grade: "medium" });
     expect(r.summary.verdict).not.toBe("blocked");
   });
   it("T23 비치명 auto에 confirmations → 경고, 무시", () => {
-    const r = run({}, { confirmations: { "legal/terms-page": "pass" } });
-    expect(r.byId["legal/terms-page"]).toMatchObject({ status: "fail", confirmed: false });
-    expect(r.warnings.join()).toMatch(/legal\/terms-page.*무시/);
+    const r = run({}, { confirmations: { "ux/terms-page": "pass" } });
+    expect(r.byId["ux/terms-page"]).toMatchObject({ status: "fail", confirmed: false });
+    expect(r.warnings.join()).toMatch(/ux\/terms-page.*무시/);
   });
 });
 
@@ -243,8 +243,8 @@ describe("N/A 이유, 설정", () => {
     expect(run({}, { disable: ["commerce/refund-policy"] }).byId["commerce/refund-policy"]).toMatchObject({ status: "na", naReason: "disabled" });
   });
   it("factors 덮어쓰기, weightMode raw", () => {
-    const r = run({}, { factors: { "legal/terms-page": { L: 3, I: 3, P: 3 } }, weightMode: "raw" });
-    expect(r.byId["legal/terms-page"]).toMatchObject({ risk: 27, grade: "critical", weight: 27 });
+    const r = run({}, { factors: { "ux/terms-page": { L: 3, I: 3, P: 3 } }, weightMode: "raw" });
+    expect(r.byId["ux/terms-page"]).toMatchObject({ risk: 27, grade: "critical", weight: 27 });
   });
   it("모르는 id의 설정은 경고", () => {
     expect(run({}, { confirmations: { "x/none": "pass" }, disable: ["x/none"] }).warnings).toHaveLength(2);

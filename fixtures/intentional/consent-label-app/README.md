@@ -15,6 +15,6 @@ Next.js app router로 만든 스터디 매칭 회원가입 서비스. **흔적 �
 
 - 필수 동의 체크박스 있음, 기본 체크 아님, 선택 동의 없음 → `privacy/consent-checkbox` 통과.
 - 수집 항목이 이메일·비밀번호뿐 → `privacy/minimal-collection` 통과.
-- 약관 페이지, 명확한 버튼 문구 → `legal/terms-page`, `ux/button-labels` 통과.
+- 약관 페이지, 명확한 버튼 문구 → `ux/terms-page`, `ux/button-labels` 통과.
 - 이미지·분석 툴·해외 서비스 없음 → 관련 의무 N/A.
 - 회원가입 폼 아래 "수집 항목·이용 목적" 안내는 처리방침이 아니므로 흔적이 되면 안 된다.

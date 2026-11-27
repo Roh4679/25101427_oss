@@ -128,7 +128,7 @@
 | T19 | T2 + `confirmations: fail` | `fail` 0, `confirmed`, `blocked` |
 | T20 | T1 + `confirmations: pass` | `pass` 1, `confirmed`, 차단 없음 |
 | T21 | 결제 SDK 없음 | 환불·사업자 정보 모두 `na`, 분모에서 빠짐 |
-| T22 | 비치명 auto 항목 정적 페이지 미탐 (`legal/terms-page`) | `fail` 0, 차단 없음 |
+| T22 | 비치명 auto 항목 정적 페이지 미탐 (`ux/terms-page`) | `fail` 0, 차단 없음 |
 | T23 | `confirmations`를 비치명 auto 항목에 씀 | 경고, 무시 |
 | T24 | 치명 항목인데 `page_exists`를 쓰면서 `trace`가 없는 YAML | 지식 베이스 로더 스키마 오류 (종료 코드 2) |
 
@@ -182,7 +182,7 @@
 | T48 | T47 + `--live`, "/refund"가 같은 origin에서 404 (410도 같음) | `fail`, 확실 → 차단, `blockers`에 포함, 메시지 "설정에 지정한 페이지가 없습니다 (404)" |
 | T49 | T47 + `--live`, "/refund"가 200이고 렌더링 본문에 "환불 정책" | `pass`, `configPage { verified: true, httpStatus: 200 }`, 렌더링 본문이 `pages[].text`에 들어감 |
 | T49a | T47 + `--live`, SPA라 "/refund"가 200이지만 본문이 홈 화면(흔적 없음) | `needs_review` 0.5, `mitigated: true`, 차단 없음, `configPage.verified: false` |
-| T49b | `pages.terms` = "/terms", `--live` 200, 본문에 "이용약관" | `legal/terms-page` `pass` |
+| T49b | `pages.terms` = "/terms", `--live` 200, 본문에 "이용약관" | `ux/terms-page` `pass` |
 | T49c | `pages`로 지정 가능한 의무의 YAML에 `trace` 없음 | 지식 베이스 로더 스키마 오류 (종료 코드 2) |
 | T50 | `--live` + `pages.privacyPolicy`가 다른 origin(노션) | 열지 않음, `pass`, "설정으로 지정됨(미검증)" 표시 |
 | T50a | T47 + `--live`, "/refund"가 401 또는 403 | `needs_review` 0.5, `mitigated: true`, 차단 없음 |

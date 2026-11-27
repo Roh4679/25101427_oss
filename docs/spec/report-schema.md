@@ -92,9 +92,9 @@ interface Finding {
 | `commerce` | 결제·상거래 | `commerce/*` |
 | `advertising` | 광고·콘텐츠 | `advertising/*` |
 | `accessibility` | 접근성 | `accessibility/*` |
-| `ux` | 운영·UX | `ux/button-labels`, `legal/terms-page` |
+| `ux` | 운영·UX | `ux/button-labels`, `ux/terms-page` |
 
-의무 id의 접두어(`legal/`)와 `category`는 다를 수 있다. 영역 집계는 항상 YAML의 `category` 값을 따른다.
+영역 집계는 항상 YAML의 `category` 값을 따른다.
 
 ## 3. 점수 계산
 

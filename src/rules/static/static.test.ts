@@ -31,8 +31,8 @@ describe("forms", () => {
         file: "pages/signup.tsx",
         line: 2,
         fields: [
-          { name: "email", kind: "email", file: "pages/signup.tsx", line: 4 },
-          { name: "b", kind: "birth", file: "pages/signup.tsx", line: 6 },
+          { name: "email", kind: "email", label: "이메일", file: "pages/signup.tsx", line: 4 },
+          { name: "b", kind: "birth", label: "생년월일", file: "pages/signup.tsx", line: 6 },
           { name: "nickname", kind: "other", file: "pages/signup.tsx", line: 7 },
         ],
         consent: { present: true, optional_prechecked: true },

@@ -104,9 +104,9 @@ export function buildResults(obligations: Obligation[], evals: ReadonlyMap<strin
     const parent = resolve(byId.get(o.depends_on)!);
     if (parent.status === "pass") return r;
 
-    const hint = evals.get(o.id)?.hint;
-    if (parent.status === "fail" && r.status !== "na" && hint) {
-      hints.set(parent.id, [...(hints.get(parent.id) ?? []), { from: o.id, item: hint }]);
+    const lines = evals.get(o.id)?.hints ?? [];
+    if (parent.status === "fail" && r.status !== "na" && lines.length > 0) {
+      hints.set(parent.id, [...(hints.get(parent.id) ?? []), ...lines.map((item) => ({ from: o.id, item }))]);
     }
     if (r.confirmed) warnings.push(`confirmations의 ${o.id}: 상위 의무(${parent.id})가 통과하지 않아 무시합니다.`);
     const na: Result = r.status === "na" ? r : { ...r, status: "na", score: null, naReason: "dependency", mitigated: false, confirmed: false, findings: [] };

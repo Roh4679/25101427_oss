@@ -17,4 +17,4 @@ Vite + 바닐라 JS로 만든 AI 문장 다듬기 서비스. 개인정보를 받
 ## 일부러 넣은 "통과해야 하는" 요소
 
 - `openai`를 쓰지만 개인정보를 수집하지 않음 → `privacy/overseas-transfer`는 N/A.
-- 정적 HTML 약관 페이지 `terms.html` → `legal/terms-page` 통과 (static-html 해석기 확인).
+- 정적 HTML 약관 페이지 `terms.html` → `ux/terms-page` 통과 (static-html 해석기 확인).

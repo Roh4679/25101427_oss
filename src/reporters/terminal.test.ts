@@ -99,7 +99,7 @@ describe("renderTerminal", () => {
       report([
         result({ findings: [{ message: "m", fix: "f", policyTodo: [{ from: "privacy/analytics-disclosure", item: "분석 도구: Google Analytics 4" }] }] }),
         result({ id: "privacy/cookie-consent", status: "na", score: null, naReason: "dependency" }),
-        result({ id: "legal/terms-page", status: "pass", score: 1, configPage: { url: "https://x.notion.site/t", verified: false } }),
+        result({ id: "ux/terms-page", status: "pass", score: 1, configPage: { url: "https://x.notion.site/t", verified: false } }),
       ]),
     );
     expect(out).toContain("새로 만들 처리방침에 포함할 항목:\n       - 분석 도구: Google Analytics 4");

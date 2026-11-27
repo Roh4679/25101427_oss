@@ -77,7 +77,7 @@ export const obligationSchema = z
     trace: items.optional(),
     evidence: z.array(evidenceSchema).min(1),
     depends_on: z.string().optional(),
-    parent_hint: z.string().min(1).optional(),
+    parent_hint: z.union([z.string().min(1), z.array(z.string().min(1)).min(1)]).optional(),
     message: z.string().min(1).optional(),
     fix: z.string().min(1).optional(),
     principle: z

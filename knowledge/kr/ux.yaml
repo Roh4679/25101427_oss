@@ -1,6 +1,6 @@
-# 운영 권고 (법적 의무 아님). 결제가 있으면 commerce/terms-display(7단계)가 대신 적용된다 (evidence-dsl.md 4장).
+# 운영·UX (법적 의무 아님, principle 생략). 결제가 있으면 commerce/terms-display(7단계)가 대신 적용된다 (evidence-dsl.md 4장).
 
-- id: legal/terms-page
+- id: ux/terms-page
   category: ux
   check: auto
   # L1: 무료 서비스에는 약관 게시 법적 의무 없음, 운영 권고 (사용자 결정 2026-11-28) / I2: 분쟁 시 근거 부족 / P3: 흔히 빠짐

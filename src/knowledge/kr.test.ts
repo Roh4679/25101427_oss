@@ -23,7 +23,6 @@ describe("knowledge/kr 항목별 통과·실패", () => {
   it("로드되고, 4단계 의무 9개가 있다", () => {
     expect(KB.obligations.map((o) => o.id).sort()).toEqual([
       "accessibility/img-alt",
-      "legal/terms-page",
       "privacy/analytics-disclosure",
       "privacy/consent-checkbox",
       "privacy/cookie-consent",
@@ -31,6 +30,7 @@ describe("knowledge/kr 항목별 통과·실패", () => {
       "privacy/overseas-transfer",
       "privacy/policy-contents",
       "privacy/policy-page",
+      "ux/terms-page",
     ]);
   });
 
@@ -62,10 +62,10 @@ describe("knowledge/kr 항목별 통과·실패", () => {
     expect(r["privacy/consent-checkbox"]!.status).toBe("fail");
   });
 
-  it("legal/terms-page: 통과 / 실패(비치명, 차단 아님) / 결제가 있으면 N/A", () => {
-    expect(status({ pages: [{ path: "/terms", source: "file-route" }] })["legal/terms-page"]!.status).toBe("pass");
-    expect(status({})["legal/terms-page"]).toMatchObject({ status: "fail", grade: "medium" });
-    expect(status({ payment_sdks: [{ name: "stripe" }] })["legal/terms-page"]).toMatchObject({ status: "na", naReason: "trigger" });
+  it("ux/terms-page: 통과 / 실패(비치명, 차단 아님) / 결제가 있으면 N/A", () => {
+    expect(status({ pages: [{ path: "/terms", source: "file-route" }] })["ux/terms-page"]!.status).toBe("pass");
+    expect(status({})["ux/terms-page"]).toMatchObject({ status: "fail", grade: "medium" });
+    expect(status({ payment_sdks: [{ name: "stripe" }] })["ux/terms-page"]).toMatchObject({ status: "na", naReason: "trigger" });
   });
 
   it("accessibility/img-alt: 통과 / 부분 통과 / 이미지 없으면 N/A", () => {
@@ -77,6 +77,19 @@ describe("knowledge/kr 항목별 통과·실패", () => {
     expect(status({})["accessibility/img-alt"]!.status).toBe("na");
   });
 
+  it("분류되지 않은 필드는 '기타' 대신 라벨(이름)으로", () => {
+    const fields = [
+      { name: "email", kind: "email", label: "이메일" },
+      { name: "nickname", kind: "other", label: "닉네임" },
+      { name: "school", kind: "other" },
+    ];
+    const r = status({ collects_personal_info: true, personal_forms: [{ ...form(), fields }] })["privacy/policy-page"]!;
+    expect(r.findings[0]!.policyTodo?.map((t) => t.item)).toEqual([
+      "수집 항목: 이메일",
+      "분류되지 않은 항목: 닉네임(nickname), school — 처리방침에 알맞은 이름으로 적으세요",
+    ]);
+  });
+
   it("parent_hint는 표시 이름으로 (T55)", () => {
     const r = status({ ...PERSONAL, analytics_scripts: [{ vendor: "ga4" }] })["privacy/policy-page"]!;
     expect(r.findings[0]!.policyTodo?.map((t) => t.item)).toEqual(["수집 항목: 이메일", "분석 도구: Google Analytics 4", "쿠키 사용 사실과 거부 방법"]);
@@ -84,7 +97,7 @@ describe("knowledge/kr 항목별 통과·실패", () => {
 
   it("법적 항목의 조문은 모두 미확인(TODO)이고 references가 있다, 약관은 principle 없음", () => {
     for (const o of KB.obligations) {
-      if (o.id === "legal/terms-page") expect(o.principle).toBeUndefined();
+      if (o.id === "ux/terms-page") expect(o.principle).toBeUndefined();
       else expect(o.principle, o.id).toMatchObject({ article: "TODO-확인필요", source: null, verified_at: null, references: expect.any(Array) });
     }
     const results = Object.values(status({ ...PERSONAL, pages: [privacy()] }));

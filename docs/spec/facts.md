@@ -80,7 +80,7 @@ interface PageRoute {
 
 ```ts
 interface PersonalForm extends Loc {
-  fields: { name: string; kind: FieldKind } & Loc[];
+  fields: { name: string; kind: FieldKind; label?: string } & Loc[];  // label: 화면의 라벨 텍스트
   consent: {
     present: boolean;            // "동의" 라벨이 붙은 체크박스가 하나 이상
     optional_prechecked: boolean; // "선택" 라벨 체크박스가 기본 체크(checked, defaultChecked)

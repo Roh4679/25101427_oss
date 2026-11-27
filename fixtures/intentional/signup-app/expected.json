@@ -20,7 +20,7 @@
     "privacy/cookie-consent": "na",
     "commerce/business-info": "na",
     "commerce/refund-policy": "na",
-    "legal/terms-page": "pass",
+    "ux/terms-page": "pass",
     "advertising/unsupported-claims": "pass",
     "advertising/fake-reviews": "na",
     "accessibility/img-alt": "pass",

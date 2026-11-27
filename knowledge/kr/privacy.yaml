@@ -35,7 +35,9 @@
   factors: { L: 3, I: 2, P: 2 }
   trigger: collects_personal_info
   depends_on: privacy/policy-page
-  parent_hint: "수집 항목: {personal_forms.fields.kind}"
+  parent_hint:
+    - "수집 항목: {personal_forms.fields[kind!=other].kind}"
+    - "분류되지 않은 항목: {personal_forms.fields[kind=other].label(name)} — 처리방침에 알맞은 이름으로 적으세요"
   evidence:
     - page_text_contains:
         page: { kind: privacy, match: ["privacy", "개인정보처리방침"] }

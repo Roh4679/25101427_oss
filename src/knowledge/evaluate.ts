@@ -1,5 +1,5 @@
 import type { Finding, PageRoute } from "../types.js";
-import { hintPlaceholders, textList } from "./loader.js";
+import { hintLines, hintPlaceholders, textList } from "./loader.js";
 import { matchItem, normalize, type PatternItem } from "./normalize.js";
 import type { Labels } from "./labels.js";
 import type { Condition, Evidence, Obligation } from "./schema.js";
@@ -18,7 +18,7 @@ export interface EvalOutput {
   reasons: string[];
   findings: Finding[];
   configPage?: { url: string; verified: boolean; httpStatus?: number };
-  hint?: string; // 채워진 parent_hint. 상위 의무가 fail이면 점수 모델이 상위 Finding에 붙인다
+  hints?: string[]; // 채워진 parent_hint 줄들. 상위 의무가 fail이면 점수 모델이 상위 Finding에 붙인다
 }
 
 interface Step {
@@ -185,14 +185,37 @@ function combine(list: Step[]): Step {
   return step(score === 1 ? "pass" : "partial", score, reasons, findings, pages);
 }
 
+// parent_hint 자리표시자 경로 (evidence-dsl.md 3.4)
+//   fields[kind=other]   배열 원소 거르기 (=, !=)
+//   label(name)          마지막 칸: "label(name)" 형식, 한쪽만 있으면 그 값
+function walkHint(v: unknown, segs: string[]): string[] {
+  if (Array.isArray(v)) return v.flatMap((x) => walkHint(x, segs));
+  if (segs.length === 0) return typeof v === "string" ? [v] : [];
+  if (v === null || typeof v !== "object") return [];
+  const obj = v as Record<string, unknown>;
+  const [seg, ...rest] = segs as [string, ...string[]];
+  const combo = rest.length === 0 ? seg.match(/^(\w+)\((\w+)\)$/) : null;
+  if (combo) {
+    const [a, b] = [obj[combo[1]!], obj[combo[2]!]].map((x) => (typeof x === "string" && x !== "" ? x : undefined));
+    return a && b && a !== b ? [`${a}(${b})`] : a || b ? [(a ?? b)!] : [];
+  }
+  const filter = seg.match(/^(\w+)\[(\w+)(!?=)([^\]]*)\]$/);
+  if (filter) {
+    const [, field, key, op, value] = filter;
+    const items = asArray(obj[field!]).filter((it) => (String((it as Record<string, unknown>)?.[key!]) === value) === (op === "="));
+    return items.flatMap((x) => walkHint(x, rest));
+  }
+  return walkHint(obj[seg], rest);
+}
+
 // {fact.path}를 Fact 값으로 채운다. 표시 이름(labels.yaml)이 있으면 바꾸고, 중복을 빼고 ", "로 잇는다.
 // 채울 값이 하나라도 비면 undefined (그 줄은 policyTodo에 넣지 않는다).
 export function renderHint(hint: string, facts: FactMap, labels: Labels = {}): string | undefined {
   let out = hint;
   for (const ph of hintPlaceholders(hint)) {
     const [key, ...path] = ph.split(".");
-    const names = labels[ph] ?? {};
-    const values = [...new Set(strings(pluck(facts.get(key!), path)).map((v) => names[v] ?? v))];
+    const names = labels[ph.replace(/\[[^\]]*\]/g, "")] ?? {};
+    const values = [...new Set(walkHint(facts.get(key!), path).map((v) => names[v] ?? v))];
     if (values.length === 0) return undefined;
     out = out.replace(`{${ph}}`, values.join(", "));
   }
@@ -212,8 +235,8 @@ function searchedScope(facts: FactMap): NonNullable<Finding["searched"]> {
 }
 
 export function evaluate(o: Obligation, facts: FactMap, mode: "static" | "live", labels: Labels = {}): EvalOutput {
-  const rendered = o.parent_hint ? renderHint(o.parent_hint, facts, labels) : undefined;
-  const hint = rendered ? { hint: rendered } : {};
+  const rendered = hintLines(o).flatMap((line) => renderHint(line, facts, labels) ?? []);
+  const hint = rendered.length > 0 ? { hints: rendered } : {};
   if (o.trigger !== undefined && !evalCondition(o.trigger, facts)) {
     return { id: o.id, applicable: false, outcome: "pass", score: 1, certain: false, reasons: [], findings: [], ...hint };
   }

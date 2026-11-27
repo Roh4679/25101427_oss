@@ -118,7 +118,9 @@ trace: ["개인정보처리방침", "privacy policy"]   # any_of와 같은 원�
 ```yaml
 - id: privacy/policy-contents
   depends_on: privacy/policy-page
-  parent_hint: "수집 항목: {personal_forms.fields.kind}"
+  parent_hint:                       # 여러 줄이면 배열
+    - "수집 항목: {personal_forms.fields[kind!=other].kind}"
+    - "분류되지 않은 항목: {personal_forms.fields[kind=other].label(name)} — 처리방침에 알맞은 이름으로 적으세요"
 - id: privacy/overseas-transfer
   depends_on: privacy/policy-page
   parent_hint: "해외 서버로 이전될 수 있음: {overseas_services}"   # 지역 선택 가능한 서비스가 있어 국가를 단정하지 않는다
@@ -132,6 +134,7 @@ trace: ["개인정보처리방침", "privacy policy"]   # any_of와 같은 원�
 
 - 붙는 조건: ① 상위 최종 상태가 `fail` ② 하위 의무의 `applies_when`이 참 (적용 조건이 거짓이면 붙이지 않는다). 상위가 `needs_review`·`partial`이면 붙이지 않는다 (처리방침이 있을 수 있어 "새로 만들" 대상이 아니다).
 - `{...}`는 Fact 키(점으로 하위 필드)이며 [facts.md](facts.md)에 있어야 한다. 없으면 로더 스키마 오류. Fact 값으로 채운다. 배열은 중복을 빼고 ", "로 잇는다. **채울 값이 비면 그 줄은 `policyTodo`에서 뺀다** ("확인 필요"로 채우지 않는다). 문구는 YAML에만 쓴다.
+- 자리표시자 경로 문법: `fields[kind=other]`·`fields[kind!=other]`는 배열 원소를 거른다. 마지막 칸 `label(name)`은 "라벨(이름)"으로 보이고, 한쪽만 있으면 그 값만 보인다. 표시 이름(`labels.yaml`)은 거르기를 뺀 경로(`personal_forms.fields.kind`)로 찾는다.
 - 순서는 지식 베이스 순서. 점수·상태·판정에는 영향이 없다 (하위 의무는 `na` 그대로).
 - 리포트 필드는 `Finding.policyTodo` ([report-schema.md](report-schema.md)).
 
@@ -150,7 +153,7 @@ trace: ["개인정보처리방침", "privacy policy"]   # any_of와 같은 원�
 | `--live`, 같은 origin, 5xx·시간 초과 | `needs_review` (`certain: false`) | `{ verified: false, httpStatus? }` |
 
 - **200만으로 통과시키지 않는다.** SPA는 없는 주소에도 `index.html`을 200으로 돌려주기 때문이다. 렌더링이 끝난 본문(정규화 후)에 그 의무의 `trace`가 하나라도 있어야 통과다.
-- 그래서 `pages`로 지정할 수 있는 의무(`privacy/policy-page`, `legal/terms-page`, `commerce/refund-policy`)는 등급과 상관없이 `trace`가 있어야 한다. 없으면 로더 스키마 오류.
+- 그래서 `pages`로 지정할 수 있는 의무(`privacy/policy-page`, `ux/terms-page`, `commerce/refund-policy`)는 등급과 상관없이 `trace`가 있어야 한다. 없으면 로더 스키마 오류.
 - 리다이렉트는 따라가서 최종 응답으로 판정한다. **로그인 리다이렉트**는 최종 URL의 경로가 지정 경로와 다르고, 최종 페이지에 `input[type=password]`가 있는 경우다.
 - 외부 URL의 본문을 보는 하위 의무(`page_text_contains`)는 `unknown` → 확인 필요가 된다.
 - 다른 origin 주소는 어떤 모드에서도 열지 않는다 (`--live`는 사용자가 준 URL만 연다).
@@ -181,8 +184,8 @@ trace: ["개인정보처리방침", "privacy policy"]   # any_of와 같은 원�
 | `privacy/cookie-before-consent` | PRIV-06 동의 전 쿠키 | privacy | auto | 2·2·3 | `analytics_scripts` + `scan_mode = live` | — | 6 |
 | `commerce/business-info` | COM-01 | commerce | semi | 3·2·3 | `payment_sdks` | — | 7 |
 | `commerce/refund-policy` | COM-02 | commerce | semi | 3·2·3 | `payment_sdks` | — | 7 |
-| `commerce/terms-display` | LEGAL-01 (결제 시) | commerce | auto | 3·2·? (P는 7단계에서 확정) | `payment_sdks` | — | 7 |
-| `legal/terms-page` | LEGAL-01 (무료 서비스) | ux (운영) | auto | 1·2·3 | `{ not: payment_sdks }` | — | 4 |
+| `commerce/terms-display` | LEGAL-01 (결제 시) | commerce | auto | 3·2·3 | `payment_sdks` | — | 7 |
+| `ux/terms-page` | LEGAL-01 (무료 서비스) | ux | auto | 1·2·3 | `{ not: payment_sdks }` | — | 4 |
 | `advertising/unsupported-claims` | AD-01 | advertising | semi | 3·2·2 | 항상 | — | 7 |
 | `advertising/fake-reviews` | AD-02 | advertising | semi | 3·2·2 | `review_components` | — | 7 |
 | `accessibility/img-alt` | A11Y-01 | accessibility | auto | 2·1·3 | `img_missing_alt` | — | 4 |
@@ -193,7 +196,9 @@ trace: ["개인정보처리방침", "privacy policy"]   # any_of와 같은 원�
 
 처리방침 본문을 보는 의무는 모두 `privacy/policy-page`에 의존한다 (3.4).
 
-**약관 의무 분리**: 결제 기능이 있으면 전자상거래법상 사이버몰 이용약관 표시 의무로 `commerce/terms-display`(법적 의무, `principle` 필수)를 적용하고, 결제가 없는 무료 서비스에는 `legal/terms-page`를 운영 권고(L1, `principle` 생략)로 적용한다. 둘은 동시에 적용되지 않는다. 약관은 연결 화면(링크)으로 표시해도 된다.
+**약관 의무 분리**: 결제 기능이 있으면 전자상거래법상 사이버몰 이용약관 표시 의무로 `commerce/terms-display`(법적 의무, `principle` 필수)를 적용하고, 결제가 없는 무료 서비스에는 `ux/terms-page`를 운영 권고(L1, `principle` 생략)로 적용한다. 둘은 동시에 적용되지 않는다. 약관은 연결 화면(링크)으로 표시해도 된다.
+
+`commerce/terms-display`는 L3·I2·P3 = 18(치명)이다. 근거는 사업자 정보(COM-01)와 같은 전자상거래법 제10조 제1항이고(조문은 확인 전, `references`에 둔다), 결제 앱에서 약관 누락이 흔하다(P3). 치명 항목이므로 `trace`가 필요하고, 확실성 규칙(흔적이 없을 때만 차단)을 그대로 적용한다.
 
 `privacy/embed-disclosure`는 근거 조문이 불명확해 L2로 두고 `TODO-확인필요`를 유지한다. 추적형 임베드를 `privacy/analytics-disclosure`에 합칠지는 검토 중이다.
 

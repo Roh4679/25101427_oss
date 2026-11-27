@@ -9,6 +9,7 @@ type FieldKind = "email" | "phone" | "name" | "birth" | "gender" | "address" | "
 interface Field {
   name: string;
   kind: FieldKind;
+  label?: string; // 화면에 보이는 라벨 텍스트
   file: string;
   line: number;
 }
@@ -100,7 +101,7 @@ function formsIn(f: SourceFile): PersonalForm[] {
       }
       if (NON_FIELD_TYPES.has(type)) continue;
       const name = attr(t.attrs, "name") ?? attr(t.attrs, "id") ?? t.name;
-      fields.push({ name, kind: kindOf(t.name, t.attrs, label), file: f.path, line: line(offset + t.start) });
+      fields.push({ name, kind: kindOf(t.name, t.attrs, label), ...(label ? { label } : {}), file: f.path, line: line(offset + t.start) });
     }
     if (!fields.some((x) => isPersonal(x.kind))) return [];
     return [{ file: f.path, line: line(at), fields, consent: { present, optional_prechecked: optional } }];
