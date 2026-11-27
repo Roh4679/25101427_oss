@@ -1,5 +1,5 @@
 # vibe-signoff 저장소 자체를 gitleaks로 검사할 때의 설정.
-# fixtures/는 탐지 규칙 테스트용 "의도적 가짜 키"를 담고 있어 예외로 둔다 (fixtures/README.md).
+# 탐지 규칙 테스트용 "의도적 가짜 키"가 있는 두 곳만 예외로 둔다 (fixtures/README.md "의도적 가짜 키").
 # 가짜 키에는 모두 FAKE_TEST가 들어 있고 어떤 서비스에서도 동작하지 않는다.
 
 [extend]
@@ -7,4 +7,7 @@ useDefault = true
 
 [allowlist]
 description = "의도적으로 넣은 가짜 키 (탐지 규칙 테스트용 fixture)"
-paths = ['''^fixtures/''']
+paths = [
+  '''^fixtures/intentional/[^/]+/fixture\.setup\.json$''',
+  '''^fixtures/intentional/leaky-keys-app/src/main\.js$''',
+]

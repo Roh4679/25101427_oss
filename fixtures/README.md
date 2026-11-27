@@ -10,9 +10,24 @@
 `fixtures/`의 `.env`와 소스에 있는 키는 **탐지 규칙을 시험하려고 일부러 넣은 가짜 값**이다.
 
 - 값에 모두 `FAKE_TEST`(그리고 `DO_NOT_USE`)가 들어 있다. 실제 키가 아니며 어떤 서비스에서도 동작하지 않는다.
+- 위치는 두 곳뿐이다: `fixture.setup.json`(준비할 때 만드는 `.env` 내용), `leaky-keys-app/src/main.js`(하드코딩 탐지용).
 - 접두어(`sk-proj-` 등)와 길이는 vibe-signoff의 탐지 규칙에 걸리도록 맞췄다. 실제 서비스 키와 헷갈리지 않도록 본문은 사람이 읽을 수 있는 단어로 쓴다.
-- 저장소 최상위 `.gitleaks.toml`이 `fixtures/`를 예외로 둔다. 다른 비밀값 검사 도구가 이 파일들을 잡으면 같은 이유로 예외 처리한다.
+- 저장소 최상위 `.gitleaks.toml`은 위 두 곳만 예외로 둔다. 다른 비밀값 검사 도구가 이 파일들을 잡으면 같은 이유로 예외 처리한다.
 - `fixtures/` 밖에는 가짜 키도 두지 않는다. 단위 테스트의 키 문자열은 테스트 안에서 조립한다.
+
+## fixture 준비
+
+골든 테스트와 데모(`npm run demo -- <이름>`)는 같은 준비 함수(`test/fixtures/prepare.ts`)를 쓴다.
+
+1. fixture 폴더를 임시 폴더에 복사한다 (`expected.json`, `fixture.setup.json` 제외).
+2. `fixture.setup.json`의 `files`(예: `.env`)를 만든다. `.env`는 저장소에 두지 않는다.
+3. `git init` → `git add -A`(그 fixture의 `.gitignore`를 따른다) → `git commit`.
+
+그래서 `.gitignore`가 `.env`를 무시하는 앱은 `.env`가 추적되지 않고, `.gitignore`가 없는 앱은 `.env`가 커밋된다. vibe-signoff 저장소 자체의 git 정보는 판정에 쓰지 않는다.
+
+```json
+{ "files": { ".env": "SUPABASE_SERVICE_ROLE_KEY=FAKE_TEST_..." } }
+```
 
 ## 정답지 형식
 
@@ -34,7 +49,7 @@
 3. 지식 베이스에 있는데 `results`에 없는 의무는 실패로 본다 (정답지 갱신 필요 → 사용자에게 묻는다).
 4. `verdict`, `blockers`, `score`는 건너뛴 의무가 **하나도 없을 때만** 비교한다.
 5. 실패하면 정답지가 아니라 코드를 고친다.
-6. `git: false`로 실행한다. fixture가 vibe-signoff 저장소에 커밋돼 있어 저장소의 git 추적 정보를 쓰면 안 된다 (facts.md 6장).
+6. fixture는 **준비한 뒤** 검사한다 (아래 "fixture 준비"). 실제 git 상태로 판정한다.
 
 ## 초안 점수 계산 근거
 

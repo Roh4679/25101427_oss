@@ -1,0 +1,5 @@
+{
+  "files": {
+    ".env": "NEXT_PUBLIC_SUPABASE_URL=https://fake-test-project.supabase.co\nNEXT_PUBLIC_SUPABASE_ANON_KEY=FAKE_TEST_anon_key_DO_NOT_USE\nSUPABASE_SERVICE_ROLE_KEY=FAKE_TEST_service_role_key_DO_NOT_USE\n"
+  }
+}

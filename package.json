@@ -20,7 +20,8 @@
     "test": "vitest run src",
     "test:fixtures": "vitest run test/fixtures --reporter=verbose",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "demo": "tsx test/fixtures/demo.ts"
   },
   "dependencies": {
     "commander": "^15.1.0",

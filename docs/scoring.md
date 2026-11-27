@@ -236,8 +236,8 @@
 | T70 | `src/api.ts`에 `"sk-proj-..."` 문자열 | `fail`, 차단 (`hardcoded`), 출력에는 `sk-p****`만 |
 | T71 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` 사용 | `pass` (공개용 키) |
 | T72 | git 미설치 또는 저장소 아님, `.gitignore`에 `.env*` | `git_tracked` Fact 없음, `gitignored`는 `.gitignore` 해석으로 → `pass` |
-| T73 | fixture `clean-app` (무시된 `.env`에 `SUPABASE_SERVICE_ROLE_KEY`) | 100점, `ready`, 정답지 변화 없음 |
-| T74 | 골든 테스트 (`git: false`), fixture의 `.env`가 vibe-signoff 저장소에 강제 추가돼 있음 | `git_tracked` Fact 없음 → 저장소 추적 정보가 판정에 영향 없음 |
+| T73 | fixture `clean-app`을 준비 (임시 폴더 + git, `.gitignore`가 `.env`를 무시) | `.env`가 추적되지 않음 → 키 노출 `pass`, 정답지 변화 없음 |
+| T74 | fixture `leaky-keys-app`을 준비 (`.gitignore` 없음) | `.env`가 커밋됨 → reason `tracked` → 차단 |
 | T75 | `.gitignore`의 부정 패턴 `.env*` + `!.env.example` | `.env.local`은 `gitignored`, `.env.example`은 아님 |
 
 **실제 git으로 확인하는 테스트** (`src/adapters/git.test.ts`, 5단계). 목(mock)을 쓰지 않는다. 테스트마다 임시 디렉터리에서 `git init` → 파일 작성 → `git add` → `git commit`(테스트용 `user.name`·`user.email`을 `-c`로 지정)을 실제로 실행한 뒤 어댑터를 돌린다. git이 없는 환경이면 이 묶음은 건너뛰고 이유를 출력한다 (CI에는 git이 있어야 한다).

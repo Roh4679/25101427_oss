@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
 import { scan } from "../../src/scan.js";
+import { prepareFixture } from "./prepare.js";
 
 // 골든 테스트 비교 규칙: fixtures/README.md
 const expectedSchema = z
@@ -26,7 +27,8 @@ for (const dir of fixtureDirs.filter((d) => existsSync(join(d, "expected.json"))
   const expected = expectedSchema.parse(JSON.parse(readFileSync(join(dir, "expected.json"), "utf8")));
   if (expected.options.mode === "live") continue; // --live는 6단계
 
-  const { report } = scan(dir, {}, { network: expected.options.network, region: expected.options.region, git: false });
+  // 임시 폴더에 준비한 실제 git 저장소로 검사한다 (fixtures/README.md)
+  const { report } = scan(prepareFixture(dir), {}, { network: expected.options.network, region: expected.options.region });
   const actual = new Map(report.results.map((r) => [r.id, r.status]));
   const ids = Object.keys(expected.results);
   const skipped = ids.filter((id) => !actual.has(id));

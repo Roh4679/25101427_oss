@@ -14,5 +14,5 @@ Next.js app router + Supabase + Google Analytics로 만든 회원가입 서비�
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` 사용 | `lib/supabase.ts` | 공개용 키를 비밀값으로 잡지 않는지 (`security/secret-exposure`) |
 | RLS를 켠 테이블 | `supabase/migrations/0001_profiles.sql` | `security/db-access` |
 | `.env*`를 무시하는 `.gitignore` | `.gitignore` | `security/secret-exposure` |
-| 무시된 `.env` (서버 전용 가짜 `SUPABASE_SERVICE_ROLE_KEY`) | `.env` | 무시되고 추적되지 않는 `.env`는 정상으로 보는지 (T73). vibe-signoff 저장소에는 `git add -f`로 넣었고 골든 테스트는 `git: false`로 실행한다 |
+| 무시된 `.env` (서버 전용 가짜 `SUPABASE_SERVICE_ROLE_KEY`) | `fixture.setup.json` → 준비할 때 `.env` 생성 | 무시되고 추적되지 않는 `.env`는 정상으로 보는지 (T73). 저장소에는 `.env`를 두지 않는다 |
 | alt가 있는 next/image | `app/page.tsx` | `accessibility/img-alt` |

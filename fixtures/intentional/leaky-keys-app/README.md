@@ -9,8 +9,8 @@ Vite + 바닐라 JS로 만든 AI 문장 다듬기 서비스. 개인정보를 받
 | # | 문제 | 위치 | 걸려야 하는 의무 |
 |---|---|---|---|
 | 1 | 프론트 코드에 OpenAI 키 하드코딩 | `src/main.js` 3행 | `security/secret-exposure` → **차단** |
-| 2 | `VITE_` 접두사 변수에 비밀 키 (번들에 포함됨) | `.env` 1행 | `security/secret-exposure` |
-| 3 | `.env` 파일이 있는데 `.gitignore` 없음 | 루트 | `security/secret-exposure` |
+| 2 | `VITE_` 접두사 변수에 비밀 키 (번들에 포함됨) | `.env` 1행 (`fixture.setup.json`으로 준비할 때 생성) | `security/secret-exposure` |
+| 3 | `.env` 파일이 있는데 `.gitignore` 없음 → 준비할 때 `.env`가 커밋됨 | 루트 | `security/secret-exposure` |
 | 4 | 이미지 2개 중 1개 alt 없음 | `index.html` 11행 | `accessibility/img-alt` (부분 통과 0.5) |
 | 5 | 모호한 버튼 문구 "클릭" | `index.html` 13행 | `ux/button-labels` |
 

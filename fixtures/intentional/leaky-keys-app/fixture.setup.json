@@ -1,0 +1,5 @@
+{
+  "files": {
+    ".env": "VITE_OPENAI_API_KEY=sk-proj-FAKE_TEST_KEY_DO_NOT_USE_0000000000000000\n"
+  }
+}

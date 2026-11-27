@@ -154,7 +154,7 @@ type FieldKind = "email" | "phone" | "name" | "birth" | "gender" | "address" | "
 git 추적 규칙
 - 파일 수집은 `.gitignore`와 상관없이 모든 파일을 읽는다. 무시 여부는 위 Fact로만 전달한다.
 - `git`은 `src/adapters/git`에서만 실행한다 (`git ls-files`, `git check-ignore --stdin`). 사용자 프로젝트의 스크립트는 실행하지 않는다.
-- 골든 테스트는 `git: false`로 실행한다. fixture는 vibe-signoff 저장소에 커밋돼 있어, 저장소의 추적 정보가 fixture 판정에 섞이면 안 된다.
+- 골든 테스트는 fixture를 임시 폴더에 복사하고 `git init`·commit한 **실제 git 상태**로 실행한다 (fixtures/README.md "fixture 준비"). git 확인을 끄는 옵션은 두지 않는다 (키 노출 검사를 우회하는 스위치가 되므로).
 - `security/secret-exposure` 판정 (5단계 YAML):
 
   | 상황 | 결과 |

@@ -52,7 +52,6 @@ export const unverifiedArticles = (results: Result[]) =>
 export interface ScanOptions {
   network: boolean;
   region: "kr" | "global";
-  git?: boolean; // false면 git을 실행하지 않는다 (골든 테스트, facts.md 6장). 기본 true
 }
 
 export interface ScanOutput {
@@ -67,7 +66,7 @@ export function scan(root: string, config: Config, options: ScanOptions, kb: Kno
   const files = collectFiles(root, config.ignorePaths);
   const ctx = { root, files, mode };
   // git 추적·무시 정보: git이 있으면 git으로, 없으면 .gitignore를 직접 해석한다
-  const git = options.git === false ? undefined : readGit(root, files.map((f) => f.path));
+  const git = readGit(root, files.map((f) => f.path));
   const ignoredSet = git ? new Set(git.ignored) : undefined;
   const ignored = ignoredSet ? (p: string) => ignoredSet.has(p) : gitignoreMatcher(files);
   const gitFacts: Fact[] = [
