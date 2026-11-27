@@ -1,0 +1,21 @@
+# 사용자에게 보이는 표시 이름 (docs/spec/evidence-dsl.md 7장)
+# 키는 Fact 경로, 값은 { Fact 값: 표시 이름 }. 제품 이름은 공식 표기를 따른다.
+
+personal_forms.fields.kind:      # facts.md FieldKind
+  email: 이메일
+  phone: 전화번호
+  name: 이름
+  birth: 생년월일
+  gender: 성별
+  address: 주소
+  rrn: 주민등록번호
+  password: 비밀번호
+  other: 기타
+
+analytics_scripts.vendor:        # facts.md analytics_scripts
+  ga4: Google Analytics 4
+  gtm: Google Tag Manager
+  meta_pixel: Meta Pixel
+  mixpanel: Mixpanel
+  kakao_pixel: 카카오 픽셀
+  naver_analytics: 네이버 애널리틱스

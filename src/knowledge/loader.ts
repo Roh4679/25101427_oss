@@ -10,7 +10,7 @@ import { knowledgeFileSchema, type Condition, type Evidence, type Obligation } f
 export class KnowledgeError extends UserError {}
 
 // 서비스 대응표처럼 의무 목록이 아닌 데이터 파일
-const DATA_FILES = new Set(["services.yaml"]);
+const DATA_FILES = new Set(["services.yaml", "labels.yaml"]);
 const FORBIDDEN_WORDS = /위법|불법|위반입니다/;
 
 export const isLiveOnly = (o: Obligation) => o.evidence.every((e) => e.mode === "live");
@@ -84,6 +84,10 @@ function checkObligation(o: Obligation): string[] {
       errors.push(`잘못된 정규식: ${re}`);
     }
   }
+
+  // 모든 증거 유형이 실패할 수 있으므로 모든 의무에 필요하다 (evidence-dsl.md 8장)
+  if (!o.message) errors.push("message가 필요합니다 (실패·확인 필요일 때 보여 줄 설명)");
+  if (!o.fix) errors.push("fix가 필요합니다 (해결 방법)");
 
   for (const text of [o.message, o.fix, o.parent_hint]) {
     if (text && FORBIDDEN_WORDS.test(text)) errors.push(`메시지에 "위법·불법·위반입니다"를 쓰지 않습니다: ${text}`);

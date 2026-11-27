@@ -5,6 +5,7 @@ import type { Config } from "./config.js";
 import { evaluate } from "./knowledge/evaluate.js";
 import { loadKnowledge } from "./knowledge/loader.js";
 import type { Obligation } from "./knowledge/schema.js";
+import { loadLabels, type Labels } from "./knowledge/labels.js";
 import { loadServices, type Service } from "./knowledge/services.js";
 import { collectFiles } from "./scanner/files.js";
 import { projectDetector, readPackageJson } from "./scanner/project.js";
@@ -25,11 +26,13 @@ const KNOWLEDGE_DIR = fileURLToPath(new URL("../knowledge/kr/", import.meta.url)
 export interface Knowledge {
   obligations: Obligation[];
   services: Service[];
+  labels: Labels;
 }
 
 export const loadDefaultKnowledge = (): Knowledge => ({
   obligations: loadKnowledge(KNOWLEDGE_DIR),
   services: loadServices(`${KNOWLEDGE_DIR}services.yaml`),
+  labels: loadLabels(`${KNOWLEDGE_DIR}labels.yaml`),
 });
 
 export interface ScanOptions {
@@ -51,7 +54,7 @@ export function scan(root: string, config: Config, options: ScanOptions, kb: Kno
   const facts = [projectDetector, servicesDetector(kb.services)].flatMap((d) => d.detect(ctx));
 
   const factMap = new Map(facts.map((f) => [f.key, f.value]));
-  const evals = new Map(kb.obligations.map((o) => [o.id, evaluate(o, factMap, mode)]));
+  const evals = new Map(kb.obligations.map((o) => [o.id, evaluate(o, factMap, mode, kb.labels)]));
   const { results, warnings } = buildResults(kb.obligations, evals, config, mode);
 
   const report: Report = {

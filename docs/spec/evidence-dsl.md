@@ -282,3 +282,23 @@ trace: ["개인정보처리방침", "privacy policy"]   # any_of와 같은 원�
 - `name`과 `packages`·`hosts`·`files` 중 하나 이상은 필수.
 - 문구는 항상 "해외 서버로 이전될 수 있음"이다. 실제 이전 여부·국가는 사용자가 확인한다 (`privacy/overseas-transfer`는 `semi`).
 - 패키지 이름은 추측하지 않는다. 항목을 추가할 때 npm에 실제로 있는지 확인한다.
+
+## 7. 표시 이름 `knowledge/kr/labels.yaml`
+
+Fact에 들어 있는 영문 값(`email`, `ga4` 등)을 사용자에게 보이는 이름으로 바꾸는 데이터다. 코드에 쓰지 않는다. zod로 검증하고, 오류면 종료 코드 2.
+
+```yaml
+personal_forms.fields.kind:     # Fact 경로 (첫 부분은 facts.md에 있는 키)
+  email: 이메일
+  birth: 생년월일
+analytics_scripts.vendor:
+  ga4: Google Analytics 4
+```
+
+- `parent_hint`의 `{경로}`를 채울 때 이 표를 쓴다. 표에 없는 값은 그대로 쓴다.
+- 제품 이름은 공식 표기를 따른다.
+
+## 8. 메시지 필수 규칙
+
+`fail`·`needs_review`가 될 수 있는 의무에는 `message`와 `fix`가 **반드시** 있어야 한다. 없으면 로더 스키마 오류. 모든 증거 유형이 실패할 수 있으므로, 사실상 모든 의무에 필요하다.
+

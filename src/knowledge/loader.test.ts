@@ -19,6 +19,8 @@ const ob = (extra: string, id = "ux/sample", factors = "{ L: 1, I: 1, P: 1 }") =
   category: ux
   check: auto
   factors: ${factors}
+  message: 테스트 메시지
+  fix: 테스트 해결
 ${extra}`;
 
 describe("parseKnowledge", () => {
@@ -83,7 +85,14 @@ describe("parseKnowledge", () => {
   });
 
   it("메시지에 금지 표현", () => {
-    expect(errorOf(ob("  message: 위반입니다\n  evidence: [{ truthy: uses_vercel }]"))).toMatch(/쓰지 않습니다/);
+    const yaml = "- id: ux/a\n  category: ux\n  check: auto\n  factors: { L: 1, I: 1, P: 1 }\n  message: 위반입니다\n  fix: 고치세요\n  evidence: [{ truthy: uses_vercel }]";
+    expect(errorOf(yaml)).toMatch(/쓰지 않습니다/);
+  });
+
+  it("message·fix가 없으면 오류 (evidence-dsl.md 8장)", () => {
+    const msg = errorOf("- id: ux/a\n  category: ux\n  check: auto\n  factors: { L: 1, I: 1, P: 1 }\n  evidence: [{ truthy: uses_vercel }]");
+    expect(msg).toMatch(/message가 필요합니다/);
+    expect(msg).toMatch(/fix가 필요합니다/);
   });
 });
 

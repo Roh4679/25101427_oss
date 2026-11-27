@@ -43,7 +43,8 @@ export type Grade = "critical" | "high" | "medium" | "low";
 export type Factors = { L: number; I: number; P: number };
 
 export interface Finding {
-  location?: { file?: string; line?: number; url?: string };
+  location?: { file?: string; line?: number; url?: string }; // 있어서 문제
+  searched?: { routes: number; footer: string[]; texts: number }; // 없어서 문제 (report-schema.md 5장)
   message: string;
   fix: string;
   aiPrompt?: string;

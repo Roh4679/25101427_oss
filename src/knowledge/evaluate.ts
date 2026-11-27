@@ -1,6 +1,7 @@
 import type { Finding, PageRoute } from "../types.js";
 import { hintPlaceholders, textList } from "./loader.js";
 import { matchItem, normalize, type PatternItem } from "./normalize.js";
+import type { Labels } from "./labels.js";
 import type { Condition, Evidence, Obligation } from "./schema.js";
 
 // trigger·evidence 평가기 (docs/spec/evidence-dsl.md). 순수 함수: Fact만 보고 판단한다.
@@ -184,13 +185,14 @@ function combine(list: Step[]): Step {
   return step(score === 1 ? "pass" : "partial", score, reasons, findings, pages);
 }
 
-// {fact.path}를 Fact 값으로 채운다. 배열은 중복을 빼고 ", "로 잇는다.
+// {fact.path}를 Fact 값으로 채운다. 표시 이름(labels.yaml)이 있으면 바꾸고, 중복을 빼고 ", "로 잇는다.
 // 채울 값이 하나라도 비면 undefined (그 줄은 policyTodo에 넣지 않는다).
-export function renderHint(hint: string, facts: FactMap): string | undefined {
+export function renderHint(hint: string, facts: FactMap, labels: Labels = {}): string | undefined {
   let out = hint;
   for (const ph of hintPlaceholders(hint)) {
     const [key, ...path] = ph.split(".");
-    const values = [...new Set(strings(pluck(facts.get(key!), path)))];
+    const names = labels[ph] ?? {};
+    const values = [...new Set(strings(pluck(facts.get(key!), path)).map((v) => names[v] ?? v))];
     if (values.length === 0) return undefined;
     out = out.replace(`{${ph}}`, values.join(", "));
   }
@@ -202,8 +204,15 @@ function traceFound(o: Obligation, facts: FactMap): boolean {
   return (o.trace ?? []).some((item) => texts.some((t) => matchItem(t, item)));
 }
 
-export function evaluate(o: Obligation, facts: FactMap, mode: "static" | "live"): EvalOutput {
-  const rendered = o.parent_hint ? renderHint(o.parent_hint, facts) : undefined;
+// 없어서 문제일 때 찾아본 범위 (report-schema.md 5장)
+function searchedScope(facts: FactMap): NonNullable<Finding["searched"]> {
+  const pages = asArray(facts.get("pages")) as PageRoute[];
+  const footer = [...new Set(strings(pluck(facts.get("footer_links"), ["file"])))];
+  return { routes: pages.filter((p) => p.source !== "footer-link").length, footer, texts: asArray(facts.get("all_text")).length };
+}
+
+export function evaluate(o: Obligation, facts: FactMap, mode: "static" | "live", labels: Labels = {}): EvalOutput {
+  const rendered = o.parent_hint ? renderHint(o.parent_hint, facts, labels) : undefined;
   const hint = rendered ? { hint: rendered } : {};
   if (o.trigger !== undefined && !evalCondition(o.trigger, facts)) {
     return { id: o.id, applicable: false, outcome: "pass", score: 1, certain: false, reasons: [], findings: [], ...hint };
@@ -218,7 +227,8 @@ export function evaluate(o: Obligation, facts: FactMap, mode: "static" | "live")
 
   // 확실성 (evidence-dsl.md 3.3): 흔적이 없고 맞는 페이지도 없을 때만 확실한 실패
   const certain = r.outcome === "pass" ? false : o.trace ? !traceFound(o, facts) && r.pages.length === 0 : r.outcome === "fail";
-  const findings = r.outcome === "pass" ? [] : r.findings.length > 0 ? r.findings : [finding()];
+  // 걸린 원소가 없는 실패 = 없어서 문제 → 찾아본 범위를 붙인다
+  const findings = r.outcome === "pass" ? [] : r.findings.length > 0 ? r.findings : [{ ...finding(), searched: searchedScope(facts) }];
   const config = r.outcome === "pass" ? r.pages.find((p) => p.source === "config") : undefined;
 
   return {

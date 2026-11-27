@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import type { Config } from "../config.js";
 import { evaluate, renderHint } from "../knowledge/evaluate.js";
+import { join } from "node:path";
+import { loadLabels } from "../knowledge/labels.js";
 import { testKb } from "../knowledge/test-kb.js";
 import type { PageRoute, Result } from "../types.js";
 import { summarize } from "./index.js";
@@ -8,10 +10,11 @@ import { buildResults } from "./results.js";
 
 // 테스트 지식 베이스 + Fact → 결과·점수 (docs/scoring.md 5장)
 const KB = testKb();
+const LABELS = loadLabels(join(import.meta.dirname, "../../knowledge/kr/labels.yaml"));
 
 function run(facts: Record<string, unknown>, config: Config = {}, mode: "static" | "live" = "static") {
   const map = new Map(Object.entries({ scan_mode: mode, ...facts }));
-  const evals = new Map(KB.map((o) => [o.id, evaluate(o, map, mode)]));
+  const evals = new Map(KB.map((o) => [o.id, evaluate(o, map, mode, LABELS)]));
   const { results, warnings } = buildResults(KB, evals, config, mode);
   const byId = Object.fromEntries(results.map((r) => [r.id, r])) as Record<string, Result>;
   return { byId, summary: summarize(results), warnings, results };
@@ -50,6 +53,20 @@ describe("확실성 — 환불 정책 (T1~T8, T43, T44, T53)", () => {
   });
   it.each(["교환·반품 안내", "교환/반품", "반품 안내", "취소·환불", "환불 안내", "환불 정책"])("T43·T53 '%s' → 흔적 있음, needs_review", (t) => {
     expect(refund({ all_text: text(t) }).status).toBe("needs_review");
+  });
+  it("없어서 문제: 찾아본 곳 (라우트 수, 푸터 파일, 화면 텍스트 수)", () => {
+    const r = refund({
+      pages: [{ path: "/", source: "file-route" }, { path: "/about", source: "file-route" }, { path: "https://blog.x.com", source: "footer-link", link_text: "블로그" }],
+      footer_links: [{ text: "블로그", href: "https://blog.x.com", file: "app/layout.tsx", line: 20 }],
+      all_text: text("환영합니다", "가입하기"),
+    });
+    expect(r.findings[0]!.searched).toEqual({ routes: 2, footer: ["app/layout.tsx"], texts: 2 });
+    expect(r.findings[0]!.location).toBeUndefined();
+  });
+  it("있어서 문제: 위치만 (찾아본 곳 없음)", () => {
+    const r = run({ ...PERSONAL, personal_forms: [{ ...form, consent: { present: true, optional_prechecked: true } }] });
+    expect(r.byId["privacy/consent-checkbox"]!.findings[0]).toMatchObject({ location: { file: "app/signup/page.tsx", line: 3 } });
+    expect(r.byId["privacy/consent-checkbox"]!.findings[0]!.searched).toBeUndefined();
   });
   it("T44 차단 메시지와 해결 방법", () => {
     const r = refund({});
@@ -183,8 +200,8 @@ describe("상위 실패 시 처리방침 포함 항목 (T55~T59)", () => {
   it("T55 처리방침 fail + GA + 폼 → 지식 베이스 순서로 항목, 점수 영향 없음", () => {
     const withHints = run({ ...PERSONAL, ...GA, ...TERMS });
     expect(todo(withHints)).toEqual([
-      { from: "privacy/policy-contents", item: "수집 항목: email" },
-      { from: "privacy/analytics-disclosure", item: "분석 도구: ga4" },
+      { from: "privacy/policy-contents", item: "수집 항목: 이메일" },
+      { from: "privacy/analytics-disclosure", item: "분석 도구: Google Analytics 4" },
       { from: "privacy/cookie-consent", item: "쿠키 사용 사실과 거부 방법" },
     ]);
     for (const id of ["privacy/policy-contents", "privacy/analytics-disclosure", "privacy/cookie-consent"]) {
