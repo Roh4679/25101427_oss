@@ -173,7 +173,7 @@ trace: ["개인정보처리방침", "privacy policy"]   # any_of와 같은 원�
 |---|---|---|---|---|---|---|---|
 | `security/secret-exposure` | SEC-01 | security | auto | 2·3·3 | 항상 | — | 5 |
 | `security/db-access` | SEC-02 | security | auto | 2·3·3 | `uses_supabase` 또는 `uses_firebase` | — | 5 |
-| `security/rls-open-write` | SEC-02 (누구나 수정·삭제) | security | semi | 2·3·2 | `uses_supabase` | — | 5 (정답지 추가 승인 후) |
+| `security/rls-open-write` | SEC-02 (누구나 수정·삭제) | security | auto (`confirmable`) | 2·3·2 | `uses_supabase` | — | 5 |
 | `security/dangerous-patterns` | SEC-03 | security | semi | 2·3·2 | 항상 | — | 5 |
 | `security/dependencies` | SEC-04 | security | auto | 2·3·2 | `dependency_audit` (네트워크 켬) | — | 7 |
 | `privacy/policy-page` | PRIV-01 | privacy | auto | 3·2·3 | `collects_personal_info` | — | 4 |

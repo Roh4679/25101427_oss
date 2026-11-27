@@ -81,6 +81,7 @@ export const obligationSchema = z
     id: z.string().regex(/^[a-z]+\/[a-z0-9-]+$/, "id는 '영역/이름' 형식"),
     category: z.enum(["security", "privacy", "commerce", "advertising", "accessibility", "ux"]),
     check: z.enum(["auto", "semi"]),
+    confirmable: z.boolean().optional(), // auto 비치명 의무도 confirmations를 허용 (의도한 경우를 사람이 풀 수 있게)
     factors: z.object({ L: level, I: level, P: level }).strict(),
     trigger: conditionSchema.optional(),
     trace: items.optional(),

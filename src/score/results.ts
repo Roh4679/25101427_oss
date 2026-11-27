@@ -68,7 +68,7 @@ export function buildResults(obligations: Obligation[], evals: ReadonlyMap<strin
     let { status, score, mitigated } = convert(o, ev, grade === "critical");
     let confirmed = false;
     if (confirmation) {
-      if (o.check === "semi" || grade === "critical") {
+      if (o.check === "semi" || grade === "critical" || o.confirmable) {
         status = confirmation;
         score = confirmation === "pass" ? 1 : 0;
         mitigated = false;

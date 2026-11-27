@@ -4,6 +4,7 @@
   "results": {
     "security/secret-exposure": "pass",
     "security/db-access": "pass",
+    "security/rls-open-write": "pass",
     "security/dangerous-patterns": "pass",
     "security/dependencies": "na",
     "privacy/policy-page": "pass",

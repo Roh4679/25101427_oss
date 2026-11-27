@@ -58,7 +58,7 @@
 
    치명 항목은 부분 통과 비율(예: 사업자 정보 4개 중 2개)을 점수로 쓰지 않는다. 확실하면 0, 아니면 0.5다.
 
-4. **확인 반영**: `confirmations[id]`가 `pass`면 `pass` 1, `fail`이면 `fail` 0. `confirmed: true`. 쓸 수 있는 의무는 `check: semi`이거나 grade가 critical인 의무다. 그 밖의 의무에 쓰면 경고하고 무시한다.
+4. **확인 반영**: `confirmations[id]`가 `pass`면 `pass` 1, `fail`이면 `fail` 0. `confirmed: true`. 쓸 수 있는 의무는 `check: semi`이거나 grade가 critical인 의무, 그리고 YAML에 `confirmable: true`가 있는 의무다 (예: `security/rls-open-write` — SQL로 확인되면 실패지만, 의도한 공개 쓰기는 사람이 풀 수 있다). 그 밖의 의무에 쓰면 경고하고 무시한다.
 5. **의존 반영**: `depends_on`이 있는 의무는 상위 의무의 최종 상태(4번까지 반영)가 `pass`가 아니면 `na`(`naReason: "dependency"`)로 바꾼다. 상위 의무부터 차례로 처리한다. 하위 의무의 `confirmations`는 이때 무시한다. 상위 최종 상태가 `fail`이면 적용 조건이 참인 하위 의무의 `parent_hint`를 상위 Finding의 `policyTodo`에 붙인다 (점수 영향 없음, evidence-dsl.md 3.4).
 6. **총점**: `floor(Σ(가중치 × 점수) / Σ(가중치) × 100)`. 적용 항목이 없으면 100.
 7. **차단**: critical이면서 상태가 `fail`인 의무가 하나라도 있으면 `blocked`, 총점 = `min(총점, 59)`. 차단을 일으킨 id를 `blockers`에 넣는다.
@@ -283,7 +283,8 @@ RLS만 켜고 정책이 없는 테이블은 아무도 접근할 수 없어 안�
 |---|---|---|
 | T96 | `create policy ... for select using (true)` | `security/db-access` `needs_review` 0.5 (치명이지만 확실하지 않음 → 차단 없음). "누구나 읽거나 추가할 수 있는 정책" 안내 |
 | T97 | `for insert with check (true)` | T96과 같음 |
-| T98 | `for update using (true)` / `for delete using (true)` | `security/rls-open-write`(높음, semi) `needs_review` 0.5, "누구나 수정·삭제할 수 있는 정책". `security/db-access`는 영향 없음 |
-| T99 | `for`가 없는 정책 (`all`) + `using (true)` | `security/rls-open-write` `needs_review` |
+| T98 | `for update using (true)` / `for delete using (true)` | `security/rls-open-write`(높음, auto) `fail` 0, 차단 없음. 메시지에 `confirmations: pass` 안내. `security/db-access`는 영향 없음 |
+| T99 | `for`가 없는 정책 (`all`) + `using (true)` | `security/rls-open-write` `fail` 0 |
+| T99a | T98 + `confirmations: { "security/rls-open-write": "pass" }` | `pass`, `confirmed` (auto지만 `confirmable: true`), 경고 없음 |
 | T100 | `using (auth.uid() = id)` (fixture `clean-app`), 주석 속 `using (true)`, 다른 스키마 | 열린 정책 아님 → `pass` |
 

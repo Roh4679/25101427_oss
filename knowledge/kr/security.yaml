@@ -56,3 +56,19 @@
   fix: >-
     eval은 쓰지 말고, HTML을 넣어야 하면 DOMPurify 등으로 정리하세요. CORS는 허용할 주소만 적고,
     API 라우트에서는 로그인 여부를 먼저 확인하세요. 의도한 코드라면 confirmations에 "security/dangerous-patterns": "pass"를 적으세요.
+
+- id: security/rls-open-write
+  category: security
+  check: auto
+  # SQL로 확인한 사실이라 실패(0점)로 본다. 높음 등급이라 차단은 하지 않는다.
+  # 의도한 공개 쓰기(방명록 등)는 사람이 confirmations로 풀 수 있다.
+  confirmable: true
+  # L2: 보안 관행 / I3: 누구나 데이터를 바꾸거나 지울 수 있음 / P2: 가끔 발생 → 12 높음
+  factors: { L: 2, I: 3, P: 2 }
+  trigger: uses_supabase
+  evidence:
+    - none: { fact: supabase_open_policies, field: command, in: [update, delete, all] }
+  message: 누구나 수정·삭제할 수 있는 정책(using (true))이 있습니다.
+  fix: >-
+    정책 조건을 auth.uid() = user_id처럼 본인 데이터로 좁히세요.
+    누구나 수정·삭제하도록 의도했다면 signoff.config.json의 confirmations에 "security/rls-open-write": "pass"를 적으세요.

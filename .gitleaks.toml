@@ -3,6 +3,12 @@
 # 가짜 키에는 모두 FAKE_TEST가 들어 있고 어떤 서비스에서도 동작하지 않는다.
 
 [extend]
+# 예전에 fixture .env를 저장소에 커밋했던 커밋들 (가짜 키, 기록은 다시 쓰지 않는다)
+commits = [
+  "70e6b57b6fb679dc4f33edbb5e5d9d71c1a1a104",  # fixture와 .env 처음 추가
+  "91a19f13ca39b9bf184f448ee272c14b773aacd1",  # clean-app/.env 추가
+  "1b45d07f2dfb7c6a1cf829f9a55fa33e218a2ce5",  # 가짜 키를 FAKE_TEST 형식으로 변경
+]
 useDefault = true
 
 [allowlist]

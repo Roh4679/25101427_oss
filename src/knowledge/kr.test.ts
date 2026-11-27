@@ -3,7 +3,7 @@ import { loadDefaultKnowledge, unverifiedArticles } from "../scan.js";
 import { buildResults } from "../score/results.js";
 import type { PageRoute, Result } from "../types.js";
 import { evaluate } from "./evaluate.js";
-import { parseKnowledge } from "./loader.js";
+import type { Config } from "../config.js";
 
 // 실제 지식 베이스(knowledge/kr) 항목마다 통과·실패 케이스 (CLAUDE.md 테스트 규칙)
 const KB = loadDefaultKnowledge();
@@ -21,7 +21,7 @@ const POLICY_TEXT =
 const privacy = (text?: string): PageRoute => ({ path: "/privacy", source: "file-route", ...(text ? { text } : {}) });
 
 describe("knowledge/kr 항목별 통과·실패", () => {
-  it("로드되고, 4·5단계 의무 12개가 있다", () => {
+  it("로드되고, 4·5단계 의무 13개가 있다", () => {
     expect(KB.obligations.map((o) => o.id).sort()).toEqual([
       "accessibility/img-alt",
       "privacy/analytics-disclosure",
@@ -33,6 +33,7 @@ describe("knowledge/kr 항목별 통과·실패", () => {
       "privacy/policy-page",
       "security/dangerous-patterns",
       "security/db-access",
+      "security/rls-open-write",
       "security/secret-exposure",
       "ux/terms-page",
     ]);
@@ -132,21 +133,29 @@ describe("knowledge/kr 항목별 통과·실패", () => {
     expect(status({ ...base, supabase_open_policies: [{ table: "posts", command: "update" }] })["security/db-access"]!.status).toBe("pass");
   });
 
-  it("T98·T99 security/rls-open-write (정답지 추가 승인 대기 중인 YAML): 수정·삭제·전부 → 높음 등급 확인 필요", () => {
-    const [o] = parseKnowledge([["rls.yaml", RLS_OPEN_WRITE_YAML]]);
-    const run = (facts: Record<string, unknown>) => {
+  it("T98·T99 security/rls-open-write: 수정·삭제·전부 using (true) → 실패 0점, 높음 등급이라 차단 없음", () => {
+    const run = (facts: Record<string, unknown>, config: Config = {}) => {
       const map = new Map(Object.entries({ scan_mode: "static", uses_supabase: true, ...facts }));
-      return buildResults([o!], new Map([[o!.id, evaluate(o!, map, "static")]]), {}, "static").results[0]!;
+      const evals = new Map(KB.obligations.map((o) => [o.id, evaluate(o, map, "static", KB.labels)]));
+      const { results, warnings } = buildResults(KB.obligations, evals, config, "static");
+      return { r: results.find((x) => x.id === "security/rls-open-write")!, blocked: results.some((x) => x.grade === "critical" && x.status === "fail"), warnings };
     };
     for (const command of ["update", "delete", "all"]) {
-      expect(run({ supabase_open_policies: [{ table: "posts", command, file: "1.sql", line: 5 }] }), command).toMatchObject({
-        status: "needs_review",
-        grade: "high",
-        findings: [{ location: { file: "1.sql", line: 5 } }],
-      });
+      const { r } = run({ supabase_open_policies: [{ table: "posts", command, file: "1.sql", line: 5 }] });
+      expect(r, command).toMatchObject({ status: "fail", score: 0, grade: "high", findings: [{ location: { file: "1.sql", line: 5 } }] });
+      expect(r.fix).toContain('"security/rls-open-write": "pass"');
     }
-    expect(run({ supabase_open_policies: [{ table: "posts", command: "select" }] }).status).toBe("pass");
-    expect(run({ supabase_open_policies: [] }).status).toBe("pass");
+    expect(run({ supabase_open_policies: [{ table: "posts", command: "select" }] }).r.status).toBe("pass");
+    expect(run({ supabase_open_policies: [] }).r.status).toBe("pass");
+    expect(run({}).r.status).toBe("pass");
+  });
+
+  it("T99a confirmable: auto지만 confirmations: pass로 풀 수 있다 (경고 없음)", () => {
+    const map = new Map<string, unknown>([["uses_supabase", true], ["supabase_open_policies", [{ table: "guestbook", command: "update" }]]]);
+    const evals = new Map(KB.obligations.map((o) => [o.id, evaluate(o, map, "static", KB.labels)]));
+    const { results, warnings } = buildResults(KB.obligations, evals, { confirmations: { "security/rls-open-write": "pass" } }, "static");
+    expect(results.find((x) => x.id === "security/rls-open-write")).toMatchObject({ status: "pass", confirmed: true });
+    expect(warnings.join()).not.toContain("rls-open-write");
   });
 
   it("security/dangerous-patterns: 통과 / 확인 필요(semi)", () => {
@@ -163,19 +172,3 @@ describe("knowledge/kr 항목별 통과·실패", () => {
     expect(unverifiedArticles(results)).toEqual(["privacy/policy-page", "privacy/policy-contents", "privacy/consent-checkbox"]);
   });
 });
-
-// 승인되면 knowledge/kr/security.yaml에 그대로 옮긴다 (정답지 4개에 키 추가가 필요해 대기 중)
-const RLS_OPEN_WRITE_YAML = `
-- id: security/rls-open-write
-  category: security
-  check: semi
-  # L2: 보안 관행 / I3: 누구나 데이터를 바꾸거나 지울 수 있음 / P2: 가끔 발생 → 12 높음
-  factors: { L: 2, I: 3, P: 2 }
-  trigger: uses_supabase
-  evidence:
-    - none: { fact: supabase_open_policies, field: command, in: [update, delete, all] }
-  message: 누구나 수정·삭제할 수 있는 정책(using (true))이 있습니다.
-  fix: >-
-    정책 조건을 auth.uid() = user_id처럼 본인 데이터로 좁히세요.
-    의도한 공개 쓰기라면 confirmations에 "security/rls-open-write": "pass"를 적으세요.
-`;
