@@ -41,6 +41,11 @@ interface Result {
   message?: string;                // 통과가 아니면 YAML의 message
   fix?: string;
   principle?: { law: string; article: string; source: string; verified_at: string };
+  configPage?: {                   // 설정 파일 pages로 판정한 경우 (evidence-dsl.md 3.5)
+    url: string;
+    verified: boolean;             // false면 리포트에 "설정으로 지정됨(미검증)"
+    httpStatus?: number;           // --live에서 같은 origin을 열었을 때
+  };
   findings: Finding[];
 }
 
@@ -50,8 +55,11 @@ interface Finding {
   fix: string;
   aiPrompt?: string;
   legalBasis?: string;
+  policyTodo?: { from: string; item: string }[];  // 상위 의무 fail 시 하위 의무의 parent_hint (evidence-dsl.md 3.4)
 }
 ```
+
+`policyTodo`는 리포트에 "새로 만들 처리방침에 포함할 항목" 목록으로 보인다. `from`은 하위 의무 id, `item`은 채워진 `parent_hint` 문구다. 점수에는 영향이 없다.
 
 생성 시각은 넣지 않는다. 같은 입력이면 같은 JSON이 나와야 한다 (골든 테스트, CI).
 

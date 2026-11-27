@@ -57,7 +57,7 @@
    치명 항목은 부분 통과 비율(예: 사업자 정보 4개 중 2개)을 점수로 쓰지 않는다. 확실하면 0, 아니면 0.5다.
 
 4. **확인 반영**: `confirmations[id]`가 `pass`면 `pass` 1, `fail`이면 `fail` 0. `confirmed: true`. 쓸 수 있는 의무는 `check: semi`이거나 grade가 critical인 의무다. 그 밖의 의무에 쓰면 경고하고 무시한다.
-5. **의존 반영**: `depends_on`이 있는 의무는 상위 의무의 최종 상태(4번까지 반영)가 `pass`가 아니면 `na`(`naReason: "dependency"`)로 바꾼다. 상위 의무부터 차례로 처리한다. 하위 의무의 `confirmations`는 이때 무시한다.
+5. **의존 반영**: `depends_on`이 있는 의무는 상위 의무의 최종 상태(4번까지 반영)가 `pass`가 아니면 `na`(`naReason: "dependency"`)로 바꾼다. 상위 의무부터 차례로 처리한다. 하위 의무의 `confirmations`는 이때 무시한다. 상위 최종 상태가 `fail`이면 적용 조건이 참인 하위 의무의 `parent_hint`를 상위 Finding의 `policyTodo`에 붙인다 (점수 영향 없음, evidence-dsl.md 3.4).
 6. **총점**: `floor(Σ(가중치 × 점수) / Σ(가중치) × 100)`. 적용 항목이 없으면 100.
 7. **차단**: critical이면서 상태가 `fail`인 의무가 하나라도 있으면 `blocked`, 총점 = `min(총점, 59)`. 차단을 일으킨 id를 `blockers`에 넣는다.
 8. **판정**: 차단이 아니면 90 이상 `ready`, 70 ~ 89 `ready_with_fixes`, 70 미만 `needs_work`.
@@ -174,12 +174,17 @@
 
 | # | 입력 | 기대 결과 |
 |---|---|---|
-| T45 | `pages.privacyPolicy` = 노션 URL, 프로젝트에 처리방침 흔적 없음 (정적) | `privacy/policy-page` `pass` (흔적 판정보다 우선) |
+| T45 | `pages.privacyPolicy` = 노션 URL, 프로젝트에 처리방침 흔적 없음 (정적) | `privacy/policy-page` `pass` (흔적 판정보다 우선), `configPage.verified: false`, "설정으로 지정됨(미검증)" 표시 |
 | T46 | T45의 하위 의무 `policy-contents` (정적, 외부 본문 못 읽음) | `unknown` → `needs_review` 0.5 |
-| T47 | `pages.refundPolicy` = "/refund", 흔적 없음 | `commerce/refund-policy` `pass` |
-| T48 | T47 + `--live`, "/refund"가 같은 origin에서 404 | `pass` 유지 + "설정에 지정한 페이지를 열 수 없습니다" 경고 |
-| T49 | T47 + `--live`, "/refund"가 200이고 본문에 흔적 | `pass`, 렌더링 본문이 `pages[].text`에 들어감 |
-| T50 | `--live` + `pages.privacyPolicy`가 다른 origin(노션) | 열지 않음, `pass` |
+| T47 | `pages.refundPolicy` = "/refund", 흔적 없음 (정적) | `commerce/refund-policy` `pass`, `configPage.verified: false` |
+| T48 | T47 + `--live`, "/refund"가 같은 origin에서 404 (410도 같음) | `fail`, 확실 → 차단, `blockers`에 포함, 메시지 "설정에 지정한 페이지가 없습니다 (404)" |
+| T49 | T47 + `--live`, "/refund"가 200 | `pass`, `configPage { verified: true, httpStatus: 200 }`, 렌더링 본문이 `pages[].text`에 들어감 |
+| T50 | `--live` + `pages.privacyPolicy`가 다른 origin(노션) | 열지 않음, `pass`, "설정으로 지정됨(미검증)" 표시 |
+| T50a | T47 + `--live`, "/refund"가 401 또는 403 | `needs_review` 0.5, `mitigated: true`, 차단 없음 |
+| T50b | T47 + `--live`, "/refund"가 "/login"으로 리다이렉트되고 비밀번호 입력란 있음 | `needs_review`, 차단 없음 |
+| T50c | T47 + `--live`, "/refund"가 "/refund/"로 리다이렉트된 뒤 200 | `pass` (로그인 리다이렉트 아님) |
+| T50d | T47 + `--live`, "/refund"가 500 또는 시간 초과 | `needs_review`, 차단 없음 |
+| T50e | T48 + `confirmations: { "commerce/refund-policy": "pass" }` | `pass`, `confirmed: true` (확인이 응답 판정보다 우선) |
 
 **흔적 매칭의 띄어쓰기 정규화**
 
@@ -190,3 +195,22 @@
 | T52 | 텍스트 "개인정보  처리 방침" (공백 여러 개, NBSP 포함) | 흔적 있음 |
 | T53 | 결제 컴포넌트에 "환불 정책" | 흔적 있음 → `needs_review` |
 | T54 | 텍스트 "교환 · 반품" (가운뎃점 앞뒤 공백) | 흔적 "교환·반품"과 맞음 |
+
+**상위 실패 시 처리방침 포함 항목 안내 (`parent_hint` → `policyTodo`)**
+
+| # | 입력 | 기대 결과 |
+|---|---|---|
+| T55 | 처리방침 `fail`, GA 사용, 개인정보 폼 있음 (fixture `signup-app`) | 처리방침 Finding의 `policyTodo`에 수집 항목(폼 필드 종류)·분석 도구(ga4)·쿠키 사용과 거부 방법이 지식 베이스 순서로 들어감. 하위 의무는 `na` 그대로, 점수 56·`blocked` 변화 없음 |
+| T56 | 처리방침 `fail`, `overseas_services` = [Supabase, OpenAI, Supabase] | `policyTodo`에 "국외 이전: Supabase, OpenAI" (중복 없이 ", "로 연결) |
+| T57 | 처리방침 `fail`, 분석 툴·해외 서비스 없음 (fixture `consent-label-app`) | `policyTodo`에 수집 항목(이메일·비밀번호)만. 분석·국외 이전·쿠키 항목 없음 |
+| T58 | 처리방침 `needs_review` (흔적만 있음) | `policyTodo` 없음 |
+| T59 | 처리방침 `fail` + `confirmations: pass` | 상위 `pass` → `policyTodo` 없음, 하위 정상 평가 |
+| T60 | `parent_hint`의 `{키}`가 facts.md에 없는 Fact | 지식 베이스 로더 스키마 오류 (종료 코드 2) |
+
+**동의 전 쿠키 분리 (`privacy/cookie-before-consent`, 6단계)**
+
+| # | 입력 | 기대 결과 |
+|---|---|---|
+| T61 | `--live`, GA 사용, 처리방침 없음, 동의 전 `_ga` 쿠키 설정 | `privacy/cookie-before-consent` 평가됨 (`depends_on` 없음). `privacy/cookie-consent`는 `na` (dependency) |
+| T62 | 정적 모드, GA 사용 | `privacy/cookie-before-consent` `na` (`naReason: mode`) |
+| T63 | `--live`, 동의 전 추적 쿠키 없음 | `pass` |

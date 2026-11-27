@@ -111,13 +111,51 @@ trace: ["개인정보처리방침", "privacy policy"]   # any_of와 같은 원�
 - `depends_on`의 대상이 없거나 순환하면 지식 베이스 로더가 스키마 오류를 낸다.
 - 상태 결정은 점수 모델이 한다 ([docs/scoring.md](../scoring.md) 3장 5번).
 
+#### 상위 의무가 실패했을 때의 안내 (`parent_hint`)
+
+하위 의무가 `na`가 되어도 하위 의무가 감지한 사실은 버리지 않는다. 하위 의무에 `parent_hint`를 적으면, 상위 의무의 최종 상태가 **`fail`**일 때 상위 의무의 Finding에 "새로 만들 처리방침에 포함할 항목"으로 붙는다.
+
+```yaml
+- id: privacy/policy-contents
+  depends_on: privacy/policy-page
+  parent_hint: "수집 항목: {personal_forms.fields.kind}"
+- id: privacy/overseas-transfer
+  depends_on: privacy/policy-page
+  parent_hint: "국외 이전: {overseas_services}"
+- id: privacy/analytics-disclosure
+  depends_on: privacy/policy-page
+  parent_hint: "분석 도구: {analytics_scripts.vendor}"
+- id: privacy/cookie-consent
+  depends_on: privacy/policy-page
+  parent_hint: "쿠키 사용 사실과 거부 방법"
+```
+
+- 붙는 조건: ① 상위 최종 상태가 `fail` ② 하위 의무의 `applies_when`이 참 (적용 조건이 거짓이면 붙이지 않는다). 상위가 `needs_review`·`partial`이면 붙이지 않는다 (처리방침이 있을 수 있어 "새로 만들" 대상이 아니다).
+- `{...}`는 Fact 키(점으로 하위 필드)이며 [facts.md](facts.md)에 있어야 한다. 없으면 로더 스키마 오류. Fact 값으로 채운다. 배열은 중복을 빼고 ", "로 잇는다. 문구는 YAML에만 쓴다.
+- 순서는 지식 베이스 순서. 점수·상태·판정에는 영향이 없다 (하위 의무는 `na` 그대로).
+- 리포트 필드는 `Finding.policyTodo` ([report-schema.md](report-schema.md)).
+
 ### 3.5 설정 파일 `pages` 지정
 
-`signoff.config.json`의 `pages`에 지정한 페이지는 `PageRoute { source: "config", kind }`로 들어가며, **흔적 판정보다 우선한다.**
+`signoff.config.json`의 `pages`에 지정한 페이지는 `PageRoute { source: "config", kind }`로 들어가며, **정적 흔적 판정보다 우선한다.** `--live`에서 같은 origin 주소를 열 수 있으면 응답 결과가 설정보다 우선한다 (설정은 "어디에 있는지"를, 렌더링은 "실제로 열리는지"를 정한다).
 
-- `page_exists`가 `kind`로 바로 맞으므로 통과한다. 이때 `trace`를 보지 않는다 (페이지가 맞았으므로 `certain` 판정 대상이 아니다).
-- 외부 URL(노션 등)은 정적 모드에서 열지 않으므로 `text`가 없다. 그 페이지의 본문을 보는 하위 의무(`page_text_contains`)는 `unknown` → 확인 필요가 된다.
-- `--live` 모드에서 지정한 주소가 `--live` URL과 같은 origin이면 크롤러가 열어 본문을 채운다. 응답이 404·5xx여도 설정이 우선하므로 통과는 유지하되, 리포트에 "설정에 지정한 페이지를 열 수 없습니다" 경고를 남긴다. 다른 origin 주소는 열지 않는다 (`--live`는 사용자가 준 URL만 연다).
+| 모드 · 주소 | 결과 | `Result.configPage` |
+|---|---|---|
+| 정적, 같은 origin 경로(`/refund`) | `pass`. `trace`를 보지 않는다 | `{ verified: false }` |
+| 정적 또는 `--live`, 외부 URL(노션 등) | 열지 않고 `pass`. 리포트에 "설정으로 지정됨(미검증)" | `{ verified: false }` |
+| `--live`, 같은 origin, 200 | `pass`. 본문을 `pages[].text`에 넣는다 | `{ verified: true, httpStatus: 200 }` |
+| `--live`, 같은 origin, 404·410 | **확실한 실패** (`fail`, `certain: true`) → 치명이면 차단. 메시지 "설정에 지정한 페이지가 없습니다 (404)" | `{ verified: true, httpStatus }` |
+| `--live`, 같은 origin, 401·403 또는 로그인 리다이렉트 | `needs_review` (`certain: false`). "로그인이 필요한 페이지라 확인하지 못했습니다" | `{ verified: false, httpStatus }` |
+| `--live`, 같은 origin, 5xx·시간 초과 | `needs_review` (`certain: false`) | `{ verified: false, httpStatus? }` |
+
+- 리다이렉트는 따라가서 최종 응답으로 판정한다. **로그인 리다이렉트**는 최종 URL의 경로가 지정 경로와 다르고, 최종 페이지에 `input[type=password]`가 있는 경우다.
+- 외부 URL의 본문을 보는 하위 의무(`page_text_contains`)는 `unknown` → 확인 필요가 된다.
+- 다른 origin 주소는 어떤 모드에서도 열지 않는다 (`--live`는 사용자가 준 URL만 연다).
+- `confirmations`는 이 표보다 우선한다 (scoring.md 3장 4번).
+
+### 3.6 의무 분리: 동의 전 추적 쿠키
+
+동의 전 추적 쿠키 검사(`cookies_before_consent`, `--live`)는 `privacy/cookie-consent`의 증거가 아니라 **별도 의무 `privacy/cookie-before-consent`**로 둔다. 처리방침 유무와 상관없이 쿠키 동작 자체를 보는 검사이므로 `depends_on`을 걸지 않는다. `privacy/cookie-consent`는 처리방침의 쿠키 항목만 본다. 구현은 6단계.
 
 ## 4. 1차 의무 목록
 
@@ -136,7 +174,8 @@ trace: ["개인정보처리방침", "privacy policy"]   # any_of와 같은 원�
 | `privacy/embed-disclosure` | PRIV-03 | privacy | auto | 2·2·2 | `external_embeds` | `privacy/policy-page` | 4 |
 | `privacy/consent-checkbox` | PRIV-04 | privacy | auto | 3·2·3 | `collects_personal_info` | — | 4 |
 | `privacy/minimal-collection` | PRIV-05 | privacy | semi | 3·2·2 | `collects_personal_info` | — | 7 |
-| `privacy/cookie-consent` | PRIV-06 | privacy | semi | 2·2·3 | `analytics_scripts` | `privacy/policy-page` | 4 (live 증거는 6) |
+| `privacy/cookie-consent` | PRIV-06 | privacy | semi | 2·2·3 | `analytics_scripts` | `privacy/policy-page` | 4 |
+| `privacy/cookie-before-consent` | PRIV-06 동의 전 쿠키 | privacy | auto | 2·2·3 | `analytics_scripts` + `scan_mode = live` | — | 6 |
 | `commerce/business-info` | COM-01 | commerce | semi | 3·2·3 | `payment_sdks` | — | 7 |
 | `commerce/refund-policy` | COM-02 | commerce | semi | 3·2·3 | `payment_sdks` | — | 7 |
 | `legal/terms-page` | LEGAL-01 | ux (운영) | auto | 1·2·3 | 항상 | — | 4 |

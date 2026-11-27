@@ -48,7 +48,7 @@ zod로 검증한다. 모르는 키는 오류(종료 코드 2).
 }
 ```
 
-- `pages` 값은 `PageRoute { source: "config", kind }`로 들어간다 (`privacyPolicy` → `privacy`, `terms` → `terms`, `refundPolicy` → `refund`). **흔적(`trace`) 판정보다 우선해 통과한다.** `--live`에서는 같은 origin 주소만 열어 본문을 확인하고, 열 수 없으면 경고만 남긴다 (`evidence-dsl.md` 3.5).
+- `pages` 값은 `PageRoute { source: "config", kind }`로 들어간다 (`privacyPolicy` → `privacy`, `terms` → `terms`, `refundPolicy` → `refund`). **정적 흔적(`trace`) 판정보다 우선해 통과한다.** `--live`에서는 같은 origin 주소만 열고 응답으로 판정한다: 200 통과, 404·410 확실한 실패, 401·403·로그인 리다이렉트·5xx 확인 필요. 외부 URL은 열지 않고 통과하되 "설정으로 지정됨(미검증)"으로 표시한다 (`evidence-dsl.md` 3.5).
 - `confirmations`는 `check: semi`이거나 치명(critical) 등급인 의무에만 쓸 수 있다. 그 외 의무에 쓰면 경고만 하고 무시한다. `fail`이면 차단, `pass`면 통과로 확정된다. 상위 의무가 `pass`가 아니어서 `na`가 된 하위 의무(`depends_on`)의 값은 무시한다 ([docs/scoring.md](../scoring.md) 3장).
 
 ## 4. 종료 코드
