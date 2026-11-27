@@ -50,7 +50,7 @@ interface PageRoute {
 | `uses_openai` | `boolean` | scanner | `openai` 의존성 또는 `api.openai.com` 호출 | 2 |
 | `uses_anthropic` | `boolean` | scanner | `@anthropic-ai/sdk` 의존성 또는 `api.anthropic.com` 호출 | 2 |
 | `uses_vercel` | `boolean` | scanner | `vercel.json` 또는 `@vercel/*` 의존성 | 2 |
-| `overseas_services` | `string[]` | scanner | 위 `uses_*` 중 참인 서비스의 표시 이름 (`Supabase`, `Firebase`, `OpenAI`, `Anthropic`, `Vercel`), 이 순서 | 2 |
+| `overseas_services` | `string[]` | scanner | `knowledge/kr/services.yaml`의 대응표(패키지·호출 호스트·설정 파일 → 서비스 표시 이름)와 맞는 서비스, 대응표 순서. 대응표는 코드에 두지 않는다 | 3 |
 | `payment_sdks` | `{ name: string } & Loc[]` | scanner | `@tosspayments/*`, `@portone/*`, `iamport`, `stripe` 등 의존성·스크립트 | 7 |
 | `dependency_audit` | `{ name, version, vulns: string[], suspicious?: "not_found" \| "new" \| "low_downloads" }[]` | adapters/osv | OSV 조회 결과. `--no-network`면 **Fact를 만들지 않는다** | 7 |
 

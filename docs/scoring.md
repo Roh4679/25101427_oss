@@ -178,7 +178,10 @@
 | T46 | T45의 하위 의무 `policy-contents` (정적, 외부 본문 못 읽음) | `unknown` → `needs_review` 0.5 |
 | T47 | `pages.refundPolicy` = "/refund", 흔적 없음 (정적) | `commerce/refund-policy` `pass`, `configPage.verified: false` |
 | T48 | T47 + `--live`, "/refund"가 같은 origin에서 404 (410도 같음) | `fail`, 확실 → 차단, `blockers`에 포함, 메시지 "설정에 지정한 페이지가 없습니다 (404)" |
-| T49 | T47 + `--live`, "/refund"가 200 | `pass`, `configPage { verified: true, httpStatus: 200 }`, 렌더링 본문이 `pages[].text`에 들어감 |
+| T49 | T47 + `--live`, "/refund"가 200이고 렌더링 본문에 "환불 정책" | `pass`, `configPage { verified: true, httpStatus: 200 }`, 렌더링 본문이 `pages[].text`에 들어감 |
+| T49a | T47 + `--live`, SPA라 "/refund"가 200이지만 본문이 홈 화면(흔적 없음) | `needs_review` 0.5, `mitigated: true`, 차단 없음, `configPage.verified: false` |
+| T49b | `pages.terms` = "/terms", `--live` 200, 본문에 "이용약관" | `legal/terms-page` `pass` |
+| T49c | `pages`로 지정 가능한 의무의 YAML에 `trace` 없음 | 지식 베이스 로더 스키마 오류 (종료 코드 2) |
 | T50 | `--live` + `pages.privacyPolicy`가 다른 origin(노션) | 열지 않음, `pass`, "설정으로 지정됨(미검증)" 표시 |
 | T50a | T47 + `--live`, "/refund"가 401 또는 403 | `needs_review` 0.5, `mitigated: true`, 차단 없음 |
 | T50b | T47 + `--live`, "/refund"가 "/login"으로 리다이렉트되고 비밀번호 입력란 있음 | `needs_review`, 차단 없음 |
@@ -201,10 +204,12 @@
 | # | 입력 | 기대 결과 |
 |---|---|---|
 | T55 | 처리방침 `fail`, GA 사용, 개인정보 폼 있음 (fixture `signup-app`) | 처리방침 Finding의 `policyTodo`에 수집 항목(폼 필드 종류)·분석 도구(ga4)·쿠키 사용과 거부 방법이 지식 베이스 순서로 들어감. 하위 의무는 `na` 그대로, 점수 56·`blocked` 변화 없음 |
-| T56 | 처리방침 `fail`, `overseas_services` = [Supabase, OpenAI, Supabase] | `policyTodo`에 "국외 이전: Supabase, OpenAI" (중복 없이 ", "로 연결) |
+| T56 | 처리방침 `fail`, `overseas_services` = [Supabase, OpenAI, Supabase] | `policyTodo`에 "해외 서버로 이전될 수 있음: Supabase, OpenAI" (중복 없이 ", "로 연결) |
 | T57 | 처리방침 `fail`, 분석 툴·해외 서비스 없음 (fixture `consent-label-app`) | `policyTodo`에 수집 항목(이메일·비밀번호)만. 분석·국외 이전·쿠키 항목 없음 |
 | T58 | 처리방침 `needs_review` (흔적만 있음) | `policyTodo` 없음 |
 | T59 | 처리방침 `fail` + `confirmations: pass` | 상위 `pass` → `policyTodo` 없음, 하위 정상 평가 |
+| T56a | 대응표(`services.yaml`)에 없는 패키지만 있음 | `overseas_services` = [] → `privacy/overseas-transfer` `na` (trigger) |
+| T56b | `services.yaml` 스키마 오류 (서비스 이름 없음 등) | 종료 코드 2 |
 | T60 | `parent_hint`의 `{키}`가 facts.md에 없는 Fact | 지식 베이스 로더 스키마 오류 (종료 코드 2) |
 
 **동의 전 쿠키 분리 (`privacy/cookie-before-consent`, 6단계)**

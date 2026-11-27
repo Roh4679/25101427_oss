@@ -28,7 +28,7 @@
 trigger:
   all:
     - collects_personal_info
-    - any: [uses_supabase, uses_firebase, uses_openai, uses_anthropic, uses_vercel]
+    - overseas_services
 ```
 
 ## 3. evidence
@@ -121,7 +121,7 @@ trace: ["개인정보처리방침", "privacy policy"]   # any_of와 같은 원�
   parent_hint: "수집 항목: {personal_forms.fields.kind}"
 - id: privacy/overseas-transfer
   depends_on: privacy/policy-page
-  parent_hint: "국외 이전: {overseas_services}"
+  parent_hint: "해외 서버로 이전될 수 있음: {overseas_services}"   # 지역 선택 가능한 서비스가 있어 국가를 단정하지 않는다
 - id: privacy/analytics-disclosure
   depends_on: privacy/policy-page
   parent_hint: "분석 도구: {analytics_scripts.vendor}"
@@ -143,11 +143,14 @@ trace: ["개인정보처리방침", "privacy policy"]   # any_of와 같은 원�
 |---|---|---|
 | 정적, 같은 origin 경로(`/refund`) | `pass`. `trace`를 보지 않는다 | `{ verified: false }` |
 | 정적 또는 `--live`, 외부 URL(노션 등) | 열지 않고 `pass`. 리포트에 "설정으로 지정됨(미검증)" | `{ verified: false }` |
-| `--live`, 같은 origin, 200 | `pass`. 본문을 `pages[].text`에 넣는다 | `{ verified: true, httpStatus: 200 }` |
+| `--live`, 같은 origin, 200 + 렌더링 본문에 그 의무의 `trace`가 있음 | `pass`. 본문을 `pages[].text`에 넣는다 | `{ verified: true, httpStatus: 200 }` |
+| `--live`, 같은 origin, 200 + `trace` 없음 | `needs_review` (`certain: false`). "설정에 지정한 페이지가 열렸지만 해당 내용이 보이지 않습니다" | `{ verified: false, httpStatus: 200 }` |
 | `--live`, 같은 origin, 404·410 | **확실한 실패** (`fail`, `certain: true`) → 치명이면 차단. 메시지 "설정에 지정한 페이지가 없습니다 (404)" | `{ verified: true, httpStatus }` |
 | `--live`, 같은 origin, 401·403 또는 로그인 리다이렉트 | `needs_review` (`certain: false`). "로그인이 필요한 페이지라 확인하지 못했습니다" | `{ verified: false, httpStatus }` |
 | `--live`, 같은 origin, 5xx·시간 초과 | `needs_review` (`certain: false`) | `{ verified: false, httpStatus? }` |
 
+- **200만으로 통과시키지 않는다.** SPA는 없는 주소에도 `index.html`을 200으로 돌려주기 때문이다. 렌더링이 끝난 본문(정규화 후)에 그 의무의 `trace`가 하나라도 있어야 통과다.
+- 그래서 `pages`로 지정할 수 있는 의무(`privacy/policy-page`, `legal/terms-page`, `commerce/refund-policy`)는 등급과 상관없이 `trace`가 있어야 한다. 없으면 로더 스키마 오류.
 - 리다이렉트는 따라가서 최종 응답으로 판정한다. **로그인 리다이렉트**는 최종 URL의 경로가 지정 경로와 다르고, 최종 페이지에 `input[type=password]`가 있는 경우다.
 - 외부 URL의 본문을 보는 하위 의무(`page_text_contains`)는 `unknown` → 확인 필요가 된다.
 - 다른 origin 주소는 어떤 모드에서도 열지 않는다 (`--live`는 사용자가 준 URL만 연다).
@@ -169,7 +172,7 @@ trace: ["개인정보처리방침", "privacy policy"]   # any_of와 같은 원�
 | `security/dependencies` | SEC-04 | security | auto | 2·3·2 | `dependency_audit` (네트워크 켬) | — | 7 |
 | `privacy/policy-page` | PRIV-01 | privacy | auto | 3·2·3 | `collects_personal_info` | — | 4 |
 | `privacy/policy-contents` | PRIV-01 필수 항목 | privacy | semi | 3·2·2 | `collects_personal_info` | `privacy/policy-page` | 4 |
-| `privacy/overseas-transfer` | 4.2 예시 | privacy | semi | 3·2·2 | 개인정보 수집 + 해외 서비스 | `privacy/policy-page` | 4 |
+| `privacy/overseas-transfer` | 4.2 예시 | privacy | semi | 3·2·2 | `collects_personal_info` + `overseas_services` | `privacy/policy-page` | 4 |
 | `privacy/analytics-disclosure` | PRIV-02 | privacy | auto | 3·2·2 | `analytics_scripts` | `privacy/policy-page` | 4 |
 | `privacy/embed-disclosure` | PRIV-03 | privacy | auto | 2·2·2 | `external_embeds` | `privacy/policy-page` | 4 |
 | `privacy/consent-checkbox` | PRIV-04 | privacy | auto | 3·2·3 | `collects_personal_info` | — | 4 |
@@ -260,3 +263,22 @@ trace: ["개인정보처리방침", "privacy policy"]   # any_of와 같은 원�
   evidence:
     - text_absent: { fact: buttons, field: label, exact: true, any_of: ["", "클릭", "여기", "확인", "버튼", "click", "here"] }
 ```
+
+## 6. 서비스 대응표 `knowledge/kr/services.yaml`
+
+`overseas_services` Fact를 만드는 데이터다. 패키지·호스트 → 서비스 대응을 코드에 쓰지 않는다. zod로 검증하고, 오류면 종료 코드 2.
+
+```yaml
+# 해외 서버로 이전될 수 있는 서비스. 지역 선택이 가능한 서비스가 있으므로 국가는 적지 않는다.
+- name: Supabase                       # 리포트에 보이는 이름
+  packages: ["@supabase/*"]            # dependencies 이름. * 는 접두어 일치
+  hosts: ["*.supabase.co"]             # 코드에 나온 호출 호스트
+  files: ["supabase/config.toml"]      # 있으면 사용으로 본다 (선택)
+- name: OpenAI
+  packages: ["openai"]
+  hosts: ["api.openai.com"]
+```
+
+- `name`과 `packages`·`hosts`·`files` 중 하나 이상은 필수.
+- 문구는 항상 "해외 서버로 이전될 수 있음"이다. 실제 이전 여부·국가는 사용자가 확인한다 (`privacy/overseas-transfer`는 `semi`).
+- 패키지 이름은 추측하지 않는다. 항목을 추가할 때 npm에 실제로 있는지 확인한다.
