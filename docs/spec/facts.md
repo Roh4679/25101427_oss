@@ -95,6 +95,7 @@ type FieldKind = "email" | "phone" | "name" | "birth" | "gender" | "address" | "
 | 키 | 타입 | 생성 | 설명 | 단계 |
 |---|---|---|---|---|
 | `visible_text` | `{ text: string } & Loc[]` | `text` | JSX 텍스트 노드, HTML 본문 텍스트 (주석, script, style 제외) | 7 |
+| `all_text` | `{ text: string } & Partial<Loc>[]` | `text` | **프로젝트 전체 텍스트.** `visible_text` + 코드의 문자열 리터럴(2자 이상, import 경로 제외) + `.md`·`.mdx`·`.txt` 본문(단, 서비스 화면이 아닌 `README*`, `CHANGELOG*`, `CONTRIBUTING*`, `LICENSE*`, `docs/` 아래 파일은 제외) + `pages`의 `path`·`external`·`link_text`·`title`. 치명 항목에서 "흔적이 어디에도 없다"를 확실히 말하기 위한 Fact (`evidence-dsl.md` 3.3). `pages`가 있으면 그 흔적도 반드시 여기 들어가므로, 페이지를 찾았는데 흔적이 없다는 결과는 나오지 않는다 | 4 |
 | `buttons` | `{ label: string } & Loc[]` | `text` | `<button>`, `input[type=submit\|button]`, `role="button"`의 라벨. 라벨 없음은 `""` | 7 |
 | `review_components` | `Loc[]` | `reviews` | 이름에 review·testimonial·후기가 들어간 컴포넌트 | 7 |
 | `hardcoded_reviews` | `{ count: number } & Loc[]` | `reviews` | 후기 컴포넌트 안의 하드코딩 배열(이름 + 별점/본문 필드를 가진 객체 2개 이상) | 7 |

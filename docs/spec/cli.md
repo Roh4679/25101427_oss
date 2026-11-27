@@ -49,7 +49,7 @@ zod로 검증한다. 모르는 키는 오류(종료 코드 2).
 ```
 
 - `pages` 값은 `PageRoute { source: "config", kind }`로 들어간다 (`privacyPolicy` → `privacy`, `terms` → `terms`, `refundPolicy` → `refund`).
-- `confirmations`는 `check: semi`인 의무에만 쓸 수 있다. 그 외 의무에 쓰면 경고만 하고 무시한다.
+- `confirmations`는 `check: semi`이거나 치명(critical) 등급인 의무에만 쓸 수 있다. 그 외 의무에 쓰면 경고만 하고 무시한다. `fail`이면 차단, `pass`면 통과로 확정된다 ([docs/scoring.md](../scoring.md) 3장).
 
 ## 4. 종료 코드
 

@@ -35,7 +35,7 @@ interface Result {
   risk: number;                    // L×I×P
   grade: "critical" | "high" | "medium" | "low";
   weight: number;
-  mitigated: boolean;              // 완화 규칙 적용 여부
+  mitigated: boolean;              // 치명 항목이지만 근거가 불확실해 차단하지 않음 (scoring.md 3장)
   confirmed: boolean;              // confirmations 반영 여부
   naReason?: "trigger" | "disabled" | "mode";
   message?: string;                // 통과가 아니면 YAML의 message
@@ -64,31 +64,26 @@ interface Finding {
 | `needs_work` | ❌ 보완 필요 |
 | `blocked` | ⛔ 배포 차단 |
 | `pass` / `partial` / `needs_review` / `fail` / `na` | 통과 / 부분 통과 / 확인 필요 / 실패 / 해당 없음 |
-| `security` `privacy` `commerce` `advertising` `accessibility` `ux` | 보안 / 개인정보 / 결제·상거래 / 광고·콘텐츠 / 접근성 / 운영·UX |
+### 영역 (`category` ↔ 리포트 영역명)
 
-## 3. 점수 계산 (src/score)
+리포트에 보이는 영역명은 아래 6개뿐이다. 코드·JSON·YAML에서는 왼쪽 값만 쓴다.
 
-평가기 출력(`outcome`, `score`, `reasons`)을 다음 순서로 바꾼다.
+| `category` | 리포트 영역명 | 포함 의무 (1차) |
+|---|---|---|
+| `security` | 보안 | `security/*` |
+| `privacy` | 개인정보 | `privacy/*` |
+| `commerce` | 결제·상거래 | `commerce/*` |
+| `advertising` | 광고·콘텐츠 | `advertising/*` |
+| `accessibility` | 접근성 | `accessibility/*` |
+| `ux` | 운영·UX | `ux/button-labels`, `legal/terms-page` |
 
-1. **N/A**: trigger 거짓, `disable`에 있음, live 전용 의무를 정적 모드로 실행 → `na`, 계산에서 제외.
-2. **위험도·등급·가중치**: `risk = L×I×P`. 18 이상 critical(10), 12~17 high(5), 6~11 medium(3), 5 이하 low(1). `weightMode: raw`면 가중치 = risk.
-3. **상태**
+의무 id의 접두어(`legal/`)와 `category`는 다를 수 있다. 영역 집계는 항상 YAML의 `category` 값을 따른다.
 
-   | outcome | auto | semi |
-   |---|---|---|
-   | pass | `pass`, 1 | `pass`, 1 |
-   | partial | `partial`, s | `needs_review`, s |
-   | unknown | `needs_review`, 0.5 | `needs_review`, 0.5 |
-   | fail | `fail`, 0 | `needs_review`, 0.5 |
+## 3. 점수 계산
 
-4. **완화 규칙**: grade가 critical이고 상태가 `fail`이며 `reasons`에 `page_missing`이 있고 정적 모드면 → `needs_review`, 0.5, `mitigated: true`. 터미널에 "`--live`로 다시 확인하세요"를 안내한다.
-5. **확인 반영**: `confirmations`의 값이 `pass`면 `pass`/1, `fail`이면 `fail`/0, `confirmed: true`.
-6. **총점**: `floor(Σ(가중치 × score) / Σ(가중치) × 100)`. 적용 항목이 하나도 없으면 100. 내림을 쓰는 이유: 89.6점이 90점(배포 가능)으로 올라가지 않게 하려고.
-7. **차단**: critical이면서 상태가 `fail`인 의무가 하나라도 있으면 `blocked`, 총점 = `min(총점, 59)`.
-8. **판정**: 차단이 아니면 90 이상 `ready`, 70~89 `ready_with_fixes`, 70 미만 `needs_work`.
-9. **영역 점수**: 같은 식(6)을 영역별로 계산. 상한은 적용하지 않는다.
+[docs/scoring.md](../scoring.md)를 따른다. 상태 변환, 치명 항목의 확실성 기준, 내림, 차단 상한, 영역 점수는 모두 그 문서에만 적는다.
 
-결과적으로 반자동 항목은 **사람이 `fail`로 확인하기 전에는 차단을 일으키지 않는다.**
+`Result`에는 `certain`을 넣지 않는다. 불확실해서 차단하지 않은 치명 항목은 `mitigated: true`로 표시하고, 터미널에 "`--live`로 다시 확인하거나 `confirmations`에 확인 결과를 적으세요"를 안내한다.
 
 ## 4. SARIF 대응
 

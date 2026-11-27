@@ -1,13 +1,17 @@
 {
   "$comment": "초안. 사용자 검토 후 expected.json으로 확정한다.",
   "fixture": "signup-app",
-  "options": { "mode": "static", "network": false, "region": "kr" },
+  "options": {
+    "mode": "static",
+    "network": false,
+    "region": "kr"
+  },
   "results": {
     "security/secret-exposure": "pass",
     "security/db-access": "na",
     "security/dangerous-patterns": "pass",
     "security/dependencies": "na",
-    "privacy/policy-page": "needs_review",
+    "privacy/policy-page": "fail",
     "privacy/policy-contents": "needs_review",
     "privacy/overseas-transfer": "na",
     "privacy/analytics-disclosure": "fail",
@@ -27,6 +31,9 @@
     "ux/button-labels": "pass"
   },
   "verdict": "blocked",
-  "blockers": ["privacy/consent-checkbox"],
-  "score": 58
+  "blockers": [
+    "privacy/policy-page",
+    "privacy/consent-checkbox"
+  ],
+  "score": 51
 }

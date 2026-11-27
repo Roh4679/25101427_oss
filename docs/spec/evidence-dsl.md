@@ -57,18 +57,33 @@ trigger:
 | `none` | `{ fact, field }` | 배열의 어떤 원소에서도 `field`가 참이 아니면 pass |
 | `any` | `[증거...]` | 하위 증거 중 가장 좋은 결과 (OR) |
 
-- `any_of`·`all_of`의 원소는 문자열 또는 **동의어 배열**이다. `all_of: [["처리목적", "이용목적"], "보호책임자"]` 는 항목 2개다.
+- `any_of`·`all_of`의 원소는 문자열, **동의어 배열**, 또는 `{ regex: "..." }`이다. `all_of: [["처리목적", "이용목적"], "보호책임자"]` 는 항목 2개다. 동의어 배열 안에도 `{ regex }`를 섞을 수 있다. 정규식은 **정규화한 텍스트**에 적용한다 (공백이 없어진 상태).
 - `field`는 점 경로다(`consent.present`). 경로 중간에 배열이 있으면 펼쳐서 모두 본다(`fields.kind`).
 - 모든 증거에 `mode: live`를 붙일 수 있다. 정적 모드에서는 그 증거를 **건너뛴다** (목록에서 없는 것으로 본다).
 
 ### 3.2 증거 결합
 
-1. `fail`이 하나라도 있으면 `fail`
+1. `fail`이 하나라도 있으면 `fail`. 실패한 증거 중 **하나라도 `certain`이면 `certain`** (AND이므로 하나가 확실히 거짓이면 전체가 확실히 거짓)
 2. 아니고 `unknown`이 하나라도 있으면 `unknown`
 3. 아니면 점수 중 최솟값 (1이면 `pass`, 아니면 `partial`)
 4. 건너뛰고 남은 증거가 없으면 `pass`
 
-평가기 출력은 `{ id, applicable, outcome: pass|partial|unknown|fail, score, reasons: string[], findings }` 이다. 이것을 상태·점수로 바꾸는 일은 점수 모델이 한다 (`report-schema.md` 3장).
+`any`(OR) 그룹은 하위 증거가 **모두 `certain` 실패일 때만** `certain` 실패다.
+
+평가기 출력은 `{ id, applicable, outcome: pass|partial|unknown|fail, score, certain, reasons: string[], findings }` 이다. 이것을 상태·점수로 바꾸는 일은 점수 모델이 한다 ([docs/scoring.md](../scoring.md)).
+
+### 3.3 실패의 확실성 (`certain`)
+
+실패한 증거는 "확실히 없다"(`certain: true`)인지 "못 찾았을 수도 있다"(`certain: false`)인지를 함께 낸다. 점수 모델은 **치명 항목에서만** 이 값을 쓴다 ([docs/scoring.md](../scoring.md) 1장 원칙).
+
+| 증거 | `certain` |
+|---|---|
+| `page_exists` | 정적 모드 → `false`, `--live` 모드 → `true` |
+| `page_text_contains` | 페이지 없음 → `page_exists`와 같음. 페이지는 있는데 문구 없음 → `true` |
+| `text_contains` | `true` |
+| `truthy` `falsy` `coverage` `every` `none` `text_absent` | `true` |
+
+**치명 항목 작성 규칙**: 페이지나 장치를 찾는 증거(`page_exists`)만 두지 말고, 프로젝트 전체 텍스트(`all_text`)에서 흔적을 찾는 `text_contains`를 함께 둔다. 흔적이 아예 없으면 확실한 실패(차단), 흔적은 있는데 페이지를 못 찾으면 불확실한 실패(확인 필요)가 된다.
 
 ## 4. 1차 의무 목록
 
@@ -112,6 +127,42 @@ trigger:
   evidence:
     - every: { fact: personal_forms, field: consent.present }
     - none:  { fact: personal_forms, field: consent.optional_prechecked }
+
+- id: commerce/refund-policy
+  category: commerce
+  check: semi
+  factors: { L: 3, I: 2, P: 3 }
+  trigger: payment_sdks
+  evidence:
+    # 1) 흔적: 프로젝트 어디에도 없으면 확실한 실패 → 차단
+    - text_contains: { fact: all_text, field: text, any_of: ["환불", "청약철회", "반품", "refund"] }
+    # 2) 장치: 흔적은 있는데 페이지를 못 찾으면 정적 모드에서는 불확실한 실패 → 확인 필요
+    - page_exists: { kind: refund, match: ["refund", "환불", "청약철회"] }
+
+- id: commerce/business-info
+  category: commerce
+  check: semi
+  factors: { L: 3, I: 2, P: 3 }
+  trigger: payment_sdks
+  evidence:
+    # 0개 → 확실한 실패(차단), 1~3개 → partial(치명이므로 확인 필요 0.5), 4개 → 통과
+    - text_contains:
+        fact: all_text
+        field: text
+        all_of:
+          - ["상호"]
+          - ["대표자", "대표"]
+          - ["사업자등록번호", { regex: "\\d{3}-\\d{2}-\\d{5}" }]
+          - ["통신판매업"]
+
+- id: privacy/policy-page
+  category: privacy
+  check: auto
+  factors: { L: 3, I: 2, P: 3 }
+  trigger: collects_personal_info
+  evidence:
+    - text_contains: { fact: all_text, field: text, any_of: ["개인정보처리방침", "개인정보 처리방침", "privacy"] }
+    - page_exists: { kind: privacy, match: ["privacy", "개인정보처리방침", "개인정보 처리방침"] }
 
 - id: ux/button-labels
   category: ux
