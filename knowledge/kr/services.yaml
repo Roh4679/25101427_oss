@@ -44,3 +44,15 @@ env_names:
     - MAPS_API_KEY
     - KAKAO_JS_KEY
     - KAKAO_JAVASCRIPT_KEY
+
+# 동의 전 추적 쿠키로 볼 쿠키 이름 (privacy/cookie-before-consent). 각 서비스의 공개 안내에 나오는 이름만 적는다.
+tracking_cookies:
+  - _ga             # Google Analytics
+  - _ga_*
+  - _gid
+  - _gat
+  - _gat_*
+  - _gcl_au         # Google Ads 전환
+  - _fbp            # Meta Pixel
+  - _fbc
+  - mp_*_mixpanel   # Mixpanel

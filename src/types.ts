@@ -11,6 +11,10 @@ export interface PageRoute {
   link_text?: string;
   title?: string;
   text?: string;
+  http_status?: number; // --live에서 연 페이지만: 최종 응답 코드 (실패·시간 초과는 0)
+  final_url?: string;
+  login_redirect?: boolean;
+  same_as_start?: boolean; // 시작 페이지와 본문이 같음 (SPA가 없는 주소에 돌려주는 기본 화면)
 }
 
 export interface Fact {

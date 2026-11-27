@@ -19,6 +19,7 @@
     "privacy/consent-checkbox": "pass",
     "privacy/minimal-collection": "pass",
     "privacy/cookie-consent": "na",
+    "privacy/cookie-before-consent": "na",
     "commerce/business-info": "na",
     "commerce/refund-policy": "na",
     "ux/terms-page": "pass",

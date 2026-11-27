@@ -288,3 +288,16 @@ RLS만 켜고 정책이 없는 테이블은 아무도 접근할 수 없어 안�
 | T99a | T98 + `confirmations: { "security/rls-open-write": "pass" }` | `pass`, `confirmed` (auto지만 `confirmable: true`), 경고 없음 |
 | T100 | `using (auth.uid() = id)` (fixture `clean-app`), 주석 속 `using (true)`, 다른 스키마 | 열린 정책 아님 → `pass` |
 
+**렌더링 모드 (`--live`, 6단계)**
+
+| # | 입력 | 기대 결과 |
+|---|---|---|
+| T101 | 정적 모드 | 렌더링 의무 4개(`privacy/cookie-before-consent`, `accessibility/color-contrast`, `accessibility/keyboard-form`, `accessibility/axe-summary`) `na` (`naReason: mode`) |
+| T102 | `--live`, 첫 페이지가 아무것도 누르기 전에 `_ga` 쿠키를 설정 | `privacy/cookie-before-consent` `fail` (높음, 차단 없음) |
+| T103 | `--live`, 대비가 낮은 글자 | `accessibility/color-contrast` `fail`, 위치는 URL |
+| T104 | `--live`, `tabindex="-1"`인 입력란이 있는 폼 / 모든 입력란에 Tab으로 닿는 폼 | `accessibility/keyboard-form` 1/2 → `partial` 0.5 |
+| T105 | `--live`, 다른 origin 링크 | 열지 않는다 (요청 없음) |
+| T106 | `--live`, 같은 origin 링크 25개 | 최대 20페이지만 연다 |
+| T107 | `playwright` 미설치 | 설치 안내, 종료 코드 2 |
+| T108 | `--live`로 연 페이지 본문에만 "청약철회" | 흔적·본문으로 인정 (`all_text`에 `live` 조각) |
+| T109 | `--live` 시작 주소가 404이거나 연결되지 않음 | "--live 시작 주소를 열 수 없습니다" 오류, 종료 코드 2 (렌더링 항목을 통과로 두지 않는다) |

@@ -29,6 +29,9 @@ vibe-signoff(MIT)가 가져다 쓰거나 참고한 외부 오픈소스·표준�
 | js-yaml 5.5.0 | MIT | 의존성 | `src/knowledge/` 지식 베이스 YAML 로더 | 2026-11-27 |
 | argparse 3.0.4 (js-yaml의 의존성) | PSF-2.0 | 간접 의존성 (런타임) | js-yaml이 내부에서 사용. 허용형 라이선스 | 2026-11-28 |
 | vitest 5.1.2 | MIT | 의존성 (dev) | 단위·골든 테스트 | 2026-11-27 |
+| playwright 1.65.1 | Apache-2.0 | optional peer dependency (테스트용 dev) | `--live` 렌더링 검사, `--live`일 때만 동적 import | 2026-11-28 |
+| @axe-core/playwright 4.14.1 (axe-core 4.14.1 포함) | MPL-2.0 | optional peer dependency (테스트용 dev), 수정 없이 사용 | 색 대비·접근성 요약 | 2026-11-28 |
+| 추적 쿠키 이름 | 각 서비스 공개 안내 | 참고 | `knowledge/kr/services.yaml` `tracking_cookies` | 2026-11-28 |
 
 버전 선택: 최소 Node는 22.12다 (`engines`, Node 20은 2026-04-30 EOL). `@types/node`는 최소 지원 버전에 맞춰 22.x를 쓴다. typescript-eslint 8.74가 TypeScript 6.1 미만만 지원해 typescript는 6.0을 쓴다.
 
@@ -43,7 +46,5 @@ fixture의 `package.json`에 적힌 `next`, `react`, `@supabase/supabase-js`, `o
 | @babel/parser | MIT | 의존성 | 정규식 오탐이 확인된 규칙만 | 필요 시 |
 | pgsql-ast-parser | MIT | 의존성 | Supabase RLS 탐지 (5단계는 정규식으로 충분해 쓰지 않음) | 필요 시 |
 | gitleaks | MIT | 외부 실행 + 패턴 참고 | `src/adapters/gitleaks`. 패턴을 이식하면 이 표를 "복사"로 바꾸고 출처·라이선스 전문을 남긴다 | 5 |
-| Playwright | Apache-2.0 | optional peer dependency (`--live`일 때만 동적 import) | `src/rules/live/` | 6 |
-| axe-core / @axe-core/playwright | MPL-2.0 | optional peer dependency (수정 없이) | 색 대비, 접근성 요약 | 6 |
 | OSV API | 데이터 이용 조건 별도 | API 호출 (`--no-network`로 끔) | `security/dependencies` | 7 |
 | Semgrep | 엔진·규칙 라이선스 별도 | 외부 실행만 | `src/adapters/semgrep`. **규칙 파일은 복사하지 않음** | 선택 |

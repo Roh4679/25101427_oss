@@ -21,11 +21,15 @@ const POLICY_TEXT =
 const privacy = (text?: string): PageRoute => ({ path: "/privacy", source: "file-route", ...(text ? { text } : {}) });
 
 describe("knowledge/kr 항목별 통과·실패", () => {
-  it("로드되고, 4·5단계 의무 13개가 있다", () => {
+  it("로드되고, 4~6단계 의무 17개가 있다", () => {
     expect(KB.obligations.map((o) => o.id).sort()).toEqual([
+      "accessibility/axe-summary",
+      "accessibility/color-contrast",
       "accessibility/img-alt",
+      "accessibility/keyboard-form",
       "privacy/analytics-disclosure",
       "privacy/consent-checkbox",
+      "privacy/cookie-before-consent",
       "privacy/cookie-consent",
       "privacy/embed-disclosure",
       "privacy/overseas-transfer",

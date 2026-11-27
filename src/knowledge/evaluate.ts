@@ -27,6 +27,8 @@ interface Step {
   reasons: string[];
   findings: Finding[];
   pages: PageRoute[]; // 증거가 맞춘 페이지 (확실성 판정, configPage)
+  certain?: boolean; // 설정 페이지의 --live 응답이 확실성을 정한 경우 (evidence-dsl.md 3.5)
+  verified?: boolean; // 설정 페이지를 --live로 열어 확인함
 }
 
 // 참 판정: 없음·false·빈 배열·빈 문자열·0 → 거짓
@@ -114,16 +116,38 @@ function patternsOf(ctx: Ctx, e: Evidence): { list: PatternItem[]; all: boolean 
   return { list: raw === "$trace" ? (ctx.o.trace ?? []) : raw, all: body.all_of !== undefined };
 }
 
+const isGone = (p: PageRoute) => p.source === "config" && (p.http_status === 404 || p.http_status === 410);
+
+// 설정 파일로 지정한 페이지를 --live로 열었으면 그 응답이 판정한다 (evidence-dsl.md 3.5)
+function configPageCheck(ctx: Ctx, hit: PageRoute[]): Step | undefined {
+  const c = hit.find((p) => p.source === "config" && p.http_status !== undefined);
+  if (!c) return undefined;
+  const status = c.http_status!;
+  const say = (message: string): Finding[] => [{ location: { url: c.final_url ?? c.path }, message, fix: ctx.o.fix ?? "" }];
+  if (status === 404 || status === 410) return { ...step("fail", 0, ["config_page_missing"], say(`설정에 지정한 페이지가 없습니다 (${status})`)), certain: true, verified: true };
+  if (c.login_redirect || status === 401 || status === 403)
+    return { ...step("unknown", 0, ["config_page_login"], say("로그인이 필요한 페이지라 확인하지 못했습니다"), [c]), certain: false };
+  if (status >= 200 && status < 300) {
+    // SPA는 없는 주소에도 200을 주므로, 시작 페이지와 다른 본문에 그 의무의 흔적이 있어야 통과
+    const text = normalize(c.text ?? "");
+    if (!c.same_as_start && (ctx.o.trace ?? []).some((item) => matchItem(text, item))) return { ...step("pass", 1, [], [], [c]), verified: true };
+    return { ...step("unknown", 0, ["config_page_no_trace"], say("설정에 지정한 페이지가 열렸지만 해당 내용이 보이지 않습니다"), [c]), certain: false };
+  }
+  return { ...step("unknown", 0, ["config_page_error"], say(`설정에 지정한 페이지를 열 수 없습니다 (${status || "시간 초과"})`), [c]), certain: false };
+}
+
 function evalEvidence(ctx: Ctx, e: Evidence): Step | "skip" {
   if (e.mode === "live" && ctx.mode !== "live") return "skip";
   const { facts } = ctx;
 
   if ("page_exists" in e) {
     const hit = findPages(asArray(facts.get("pages")) as PageRoute[], e.page_exists);
+    const byConfig = configPageCheck(ctx, hit);
+    if (byConfig) return byConfig;
     return hit.length > 0 ? step("pass", 1, [], [], hit) : step("fail", 0, ["page_missing"]);
   }
   if ("page_text_contains" in e) {
-    const hit = findPages(asArray(facts.get("pages")) as PageRoute[], e.page_text_contains.page);
+    const hit = findPages(asArray(facts.get("pages")) as PageRoute[], e.page_text_contains.page).filter((p) => !isGone(p));
     if (hit.length === 0) return step("fail", 0, ["page_missing"]);
     const texts = strings(hit.map((p) => p.text));
     if (texts.length === 0) return step("unknown", 0, ["page_text_unknown"], [], hit);
@@ -180,13 +204,20 @@ function evalEvidence(ctx: Ctx, e: Evidence): Step | "skip" {
   const rank = (r: Step) => (r.outcome === "pass" ? 3 : r.outcome === "partial" ? 2 + r.score : r.outcome === "unknown" ? 1 : 0);
   const best = subs.reduce((a, b) => (rank(b) > rank(a) ? b : a));
   const pages = subs.flatMap((s) => s.pages);
+  const certain = subs.find((x) => x.certain !== undefined)?.certain;
   return best.outcome === "fail"
-    ? step("fail", 0, subs.flatMap((s) => s.reasons), subs.flatMap((s) => s.findings), pages)
+    ? { ...step("fail", 0, subs.flatMap((s) => s.reasons), subs.flatMap((s) => s.findings), pages), ...(certain !== undefined ? { certain } : {}) }
     : { ...best, pages };
 }
 
 // 증거 결합 (evidence-dsl.md 3.2). 남은 증거가 없으면 pass.
 function combine(list: Step[]): Step {
+  const flags = { certain: list.find((r) => r.certain !== undefined)?.certain, verified: list.some((r) => r.verified) };
+  const r = combineOutcome(list);
+  return { ...r, ...(flags.certain !== undefined ? { certain: flags.certain } : {}), ...(flags.verified ? { verified: true } : {}) };
+}
+
+function combineOutcome(list: Step[]): Step {
   if (list.length === 0) return step("pass", 1);
   const pages = list.flatMap((r) => r.pages);
   const reasons = list.flatMap((r) => r.reasons);
@@ -261,10 +292,12 @@ export function evaluate(o: Obligation, facts: FactMap, mode: "static" | "live",
   const r = combine(steps);
 
   // 확실성 (evidence-dsl.md 3.3): 흔적이 없고 맞는 페이지도 없을 때만 확실한 실패
-  const certain = r.outcome === "pass" ? false : o.trace ? !traceFound(o, facts) && r.pages.length === 0 : r.outcome === "fail";
+  // 설정 페이지의 --live 응답(404 → 확실, 로그인·오류 → 불확실)이 있으면 그것을 따른다
+  const certain =
+    r.outcome === "pass" ? false : r.certain !== undefined ? r.certain : o.trace ? !traceFound(o, facts) && r.pages.length === 0 : r.outcome === "fail";
   // 걸린 원소가 없는 실패 = 없어서 문제 → 찾아본 범위를 붙인다
   const findings = r.outcome === "pass" ? [] : r.findings.length > 0 ? r.findings : [{ ...finding(), searched: searchedScope(facts) }];
-  const config = r.outcome === "pass" ? r.pages.find((p) => p.source === "config") : undefined;
+  const config = r.pages.find((p) => p.source === "config");
 
   return {
     id: o.id,
@@ -274,7 +307,15 @@ export function evaluate(o: Obligation, facts: FactMap, mode: "static" | "live",
     certain,
     reasons: r.reasons,
     findings,
-    ...(config ? { configPage: { url: config.external ?? config.path, verified: false } } : {}),
+    ...(config
+      ? {
+          configPage: {
+            url: config.external ?? config.path,
+            verified: r.verified === true,
+            ...(config.http_status !== undefined ? { httpStatus: config.http_status } : {}),
+          },
+        }
+      : {}),
     ...hint,
   };
 }

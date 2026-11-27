@@ -15,6 +15,7 @@ services:
     packages: ["openai"]
     hosts: ["api.openai.com"]
 env_names: { public: [], restricted: [] }
+tracking_cookies: []
 `).services;
 
 const detect = (files: SourceFile[]) => servicesDetector(TABLE).detect({ root: "/", files, mode: "static" })[0]!.value;

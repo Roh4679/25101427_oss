@@ -155,6 +155,7 @@ trace: ["개인정보처리방침", "privacy policy"]   # any_of와 같은 원�
 | `--live`, 같은 origin, 5xx·시간 초과 | `needs_review` (`certain: false`) | `{ verified: false, httpStatus? }` |
 
 - **200만으로 통과시키지 않는다.** SPA는 없는 주소에도 `index.html`을 200으로 돌려주기 때문이다. 렌더링이 끝난 본문(정규화 후)에 그 의무의 `trace`가 하나라도 있어야 통과다.
+- 본문이 시작 페이지와 똑같으면(`same_as_start`) SPA 기본 화면으로 보고 흔적이 있어도 확인 필요다. 기본 화면의 푸터에 "이용약관" 링크가 있으면 흔적만으로는 구분할 수 없기 때문이다. 이런 페이지는 `pages`에 "있음"으로 넣지 않는다.
 - 그래서 `pages`로 지정할 수 있는 의무(`privacy/policy-page`, `ux/terms-page`, `commerce/refund-policy`)는 등급과 상관없이 `trace`가 있어야 한다. 없으면 로더 스키마 오류.
 - 리다이렉트는 따라가서 최종 응답으로 판정한다. **로그인 리다이렉트**는 최종 URL의 경로가 지정 경로와 다르고, 최종 페이지에 `input[type=password]`가 있는 경우다.
 - 외부 URL의 본문을 보는 하위 의무(`page_text_contains`)는 `unknown` → 확인 필요가 된다.
@@ -302,6 +303,8 @@ env_names:
 - 문구는 항상 "해외 서버로 이전될 수 있음"이다. 실제 이전 여부·국가는 사용자가 확인한다 (`privacy/overseas-transfer`는 `semi`).
 - 패키지 이름은 추측하지 않는다. 항목을 추가할 때 npm에 실제로 있는지 확인한다.
 - `env_names`는 클라이언트 접두사(`NEXT_PUBLIC_`, `VITE_`, `REACT_APP_`, `EXPO_PUBLIC_`, `NUXT_PUBLIC_`, `PUBLIC_`)를 뗀 이름이 같거나 `_이름`으로 끝나면 맞는다 (`NEXT_PUBLIC_MYAPP_FIREBASE_API_KEY` → `FIREBASE_API_KEY`).
+
+`tracking_cookies`: 동의 전 추적 쿠키로 볼 쿠키 이름 패턴 (`*`는 아무 글자). 예: `_ga`, `_ga_*`, `_gid`, `_fbp`. 공개 설치 안내에 나오는 이름만 적는다.
 
 ## 7. 표시 이름 `knowledge/kr/labels.yaml`
 

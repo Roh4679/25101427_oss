@@ -35,6 +35,11 @@ interface PageRoute {
   link_text?: string;            // 푸터 링크 텍스트
   title?: string;                // <h1> 또는 <title> 텍스트
   text?: string;                 // 페이지 본문 텍스트. 정적으로 못 읽으면 없음
+  // --live에서 연 페이지만 (evidence-dsl.md 3.5)
+  http_status?: number;          // 최종 응답 코드. 시간 초과·연결 실패는 0
+  final_url?: string;            // 리다이렉트를 따라간 뒤 주소
+  login_redirect?: boolean;      // 최종 경로가 요청 경로와 다르고 최종 페이지에 input[type=password]가 있음
+  same_as_start?: boolean;       // 시작 페이지와 본문이 같음 (SPA가 없는 주소에 돌려주는 기본 화면)
 }
 ```
 
@@ -173,7 +178,13 @@ git 추적 규칙
 |---|---|---|---|---|
 | `axe_violations` | `{ id: string; impact: string; nodes: number; url: string }[]` | `axe` | axe-core 결과 요약 | 6 |
 | `contrast_failures` | `{ selector: string; ratio: number; url: string }[]` | `axe` | axe `color-contrast` 위반 | 6 |
-| `keyboard_forms` | `{ url: string; total: number; missing: number }` | `keyboard` | Tab만으로 제출 못 한 폼 수 (`img_missing_alt`와 같은 `total/missing` 형태) | 6 |
-| `cookies_before_consent` | `{ name: string; domain: string; url: string }[]` | `cookies` | 동의 전 설정된 추적 쿠키 | 6 |
+| `keyboard_forms` | `{ total: number; missing: number; items: { url: string }[] }` | `keyboard` | 렌더링한 페이지의 폼 중 Tab만으로 모든 입력란과 제출 버튼에 닿지 못한 폼 수 (`img_missing_alt`와 같은 `total/missing/items` 형태). 폼이 없으면 Fact를 만들지 않는다 | 6 |
+| `cookies_before_consent` | `{ name: string; domain: string; url: string }[]` | `cookies` | 첫 페이지를 연 직후(아무것도 누르기 전) 설정된 쿠키 중 이름이 `services.yaml` `tracking_cookies`에 맞는 것 | 6 |
+
+렌더링 규칙 (src/rules/live)
+- `--live <url>`과 **같은 origin**의 페이지만 연다. 시작 주소에서 `<a href>`를 따라 너비 우선으로 최대 20페이지. `pages`에 설정으로 지정한 같은 origin 주소도 연다. 다른 origin은 열지 않는다.
+- GET으로 열기만 한다. 폼 제출, 로그인 시도, 반복 요청은 하지 않는다 (CLAUDE.md 도구 자체의 보안).
+- 연 페이지는 `pages`에 `source: "live"`로 더하고(같은 주소의 정적 라우트가 있으면 합친다), 본문은 `all_text`에 `source: "live"`로 **더한다**.
+- 브라우저: Playwright Chromium → 설치된 Chrome → Edge 순서로 실행해 본다. 모두 안 되면 설치 안내와 함께 종료 코드 2.
 
 `--live`에서는 `pages`에 `source: "live"` 항목이 추가되고, 각 항목에 렌더링된 본문 `text`가 들어간다.

@@ -19,6 +19,7 @@
     "privacy/consent-checkbox": "fail",
     "privacy/minimal-collection": "needs_review",
     "privacy/cookie-consent": "na",
+    "privacy/cookie-before-consent": "na",
     "commerce/business-info": "na",
     "commerce/refund-policy": "na",
     "ux/terms-page": "pass",

@@ -17,23 +17,26 @@ vibe-signoff(MIT)가 사용하거나 참고한 외부 오픈소스를 모두 적
 | typescript-eslint | 8.74.0 | MIT | `eslint.config.js` TypeScript 규칙 | 개발용 | `422c5fe` |
 | tsx | 4.23.15 | MIT | `npm run dev`, `npm run demo` (TypeScript 바로 실행) | 개발용 | `422c5fe` |
 | vitest | 5.1.2 | MIT | 단위·골든 테스트 | 개발용 | `422c5fe` (4.1.12), `91a19f1` (5로 올림) |
+| playwright | 1.65.1 | Apache-2.0 | `--live` 렌더링 검사 (`src/rules/live/`). `--live`일 때만 동적 import | **선택 설치** (optional peer dependency). 저장소에서는 테스트용 devDependency | 6단계 커밋 `feat(live): ...` (이 행을 추가한 커밋) |
+| @axe-core/playwright | 4.14.1 | MPL-2.0 | 색 대비·접근성 요약 (`src/rules/live/crawl.ts`). 수정 없이 사용 | **선택 설치** (optional peer dependency). 테스트용 devDependency | 6단계 커밋 (위와 같음) |
+| axe-core | 4.14.1 | MPL-2.0 | @axe-core/playwright의 의존성. 수정 없이 사용 | 선택 설치 (간접) | 6단계 커밋 (위와 같음) |
 
 - 저장소 기록에 있는 `f1e8a6b`(2026-11-25)는 이 저장소에 있던 **이전 프로젝트**의 커밋이다 (`7e41cd5`에서 교체). vibe-signoff의 도입 커밋이 아니다.
 - 버전 선택 이유: 최소 Node는 22.12 (`engines`). typescript-eslint 8.74가 TypeScript 6.1 미만만 지원해 TypeScript는 6.0을 쓴다.
 
-### 간접 의존성 라이선스 (`package-lock.json` 전체 182개)
+### 간접 의존성 라이선스 (`package-lock.json` 전체 192개)
 
 | 라이선스 | 개수 | 비고 |
 |---|---|---|
 | MIT | 144 | 런타임: commander, zod, js-yaml |
-| Apache-2.0 | 15 | 개발용 |
-| MPL-2.0 | 12 | 개발용만: `lightningcss`와 플랫폼별 바이너리 (vitest → vite 경유). 배포물에 포함되지 않는다 |
+| Apache-2.0 | 17 | 개발용·선택 설치 (`playwright`, `playwright-core` 포함) |
+| MPL-2.0 | 14 | 개발용: `lightningcss`와 플랫폼별 바이너리 (vitest → vite 경유). 선택 설치: `@axe-core/playwright`, `axe-core` (수정 없이 사용, 배포물에 포함하지 않음) |
 | BSD-2-Clause, BSD-3-Clause | 8 | 개발용 |
 | ISC | 6 | 개발용 |
 | BlueOak-1.0.0 | 2 | 개발용 (`minimatch` 등) |
 | PSF-2.0 | 1 | **런타임**: `argparse` 3.0.4 (js-yaml의 의존성). Python Software Foundation 허용형 라이선스로 MIT 프로젝트와 함께 배포할 수 있다 |
 
-GPL 계열은 없다. 런타임에 함께 설치되는 패키지는 commander, zod, js-yaml, argparse 4개다.
+GPL 계열은 없다. 기본 설치(런타임)에 함께 설치되는 패키지는 commander, zod, js-yaml, argparse 4개 그대로다. playwright·axe는 `--live`를 쓰는 사용자가 따로 설치한다.
 
 ## 2. 참고한 표준·문서·형식 (코드 복사 없음)
 
@@ -46,6 +49,7 @@ GPL 계열은 없다. 런타임에 함께 설치되는 패키지는 commander, z
 | gitignore 문법 (Git 문서 `gitignore(5)`) | GPL-2.0 (문서) | 패턴 규칙 (`!`, 끝 `/`, 앞 `/`, `**`)의 동작 | `src/scanner/gitignore.ts`를 직접 작성. 문서 내용·코드를 복사하지 않음 | `250abe3` |
 | PostgreSQL·Supabase RLS SQL 문법 | PostgreSQL License (문서) | `create table`, `alter table ... enable row level security`, `create policy ... using (...)` 문법 | `src/rules/static/database.ts` 정규식을 직접 작성 | `250abe3`, `5ba89fa` |
 | Firebase 보안 규칙 문법 | 공개 문서 | `allow read, write: if ...`, `".read": true` | `src/rules/static/database.ts` | `250abe3` |
+| 추적 쿠키 이름 (`_ga`, `_gid`, `_fbp`, `mp_*_mixpanel` 등) | 각 서비스의 공개 안내 | 쿠키 이름 | `knowledge/kr/services.yaml` `tracking_cookies` | 6단계 커밋 |
 
 ## 3. 탐지 패턴의 출처 확인
 
@@ -63,6 +67,4 @@ GPL 계열은 없다. 런타임에 함께 설치되는 패키지는 commander, z
 
 | 이름 | 라이선스 | 쓸 곳 | 단계 |
 |---|---|---|---|
-| playwright | Apache-2.0 | `--live` 렌더링 검사. optional peer dependency (기본 설치 안 함) | 6 |
-| @axe-core/playwright, axe-core | MPL-2.0 | 색 대비, 접근성 요약. optional peer dependency, 수정 없이 사용 | 6 |
 | OSV API | 데이터 이용 조건 별도 | `security/dependencies` (`--no-network`로 끔) | 7 |

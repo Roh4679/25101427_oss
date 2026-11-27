@@ -20,6 +20,9 @@ import { patternsDetector } from "./rules/static/patterns.js";
 import { secretsDetector } from "./rules/static/secrets.js";
 import { readGit } from "./adapters/git.js";
 import { gitignoreMatcher } from "./scanner/gitignore.js";
+import { cookieMatcher } from "./knowledge/services.js";
+import type { LiveResult } from "./rules/live/crawl.js";
+import { liveFacts } from "./rules/live/facts.js";
 import { summarize } from "./score/index.js";
 import { buildResults } from "./score/results.js";
 import type { Fact, Report, Result } from "./types.js";
@@ -37,12 +40,19 @@ export interface Knowledge {
   obligations: Obligation[];
   services: Service[];
   envNames: EnvNames;
+  trackingCookies: string[];
   labels: Labels;
 }
 
 export const loadDefaultKnowledge = (): Knowledge => {
-  const { services, env_names } = loadServices(`${KNOWLEDGE_DIR}services.yaml`);
-  return { obligations: loadKnowledge(KNOWLEDGE_DIR), services, envNames: env_names, labels: loadLabels(`${KNOWLEDGE_DIR}labels.yaml`) };
+  const { services, env_names, tracking_cookies } = loadServices(`${KNOWLEDGE_DIR}services.yaml`);
+  return {
+    obligations: loadKnowledge(KNOWLEDGE_DIR),
+    services,
+    envNames: env_names,
+    trackingCookies: tracking_cookies,
+    labels: loadLabels(`${KNOWLEDGE_DIR}labels.yaml`),
+  };
 };
 // 적용된(N/A가 아닌) 의무 중 조문을 사람이 아직 확인하지 않은 것
 export const unverifiedArticles = (results: Result[]) =>
@@ -60,8 +70,10 @@ export interface ScanOutput {
 }
 
 // 사실 수집 → 지식 베이스 평가 → 점수. 사용자 프로젝트의 코드는 읽기만 하고 실행하지 않는다.
-export function scan(root: string, config: Config, options: ScanOptions, kb: Knowledge = loadDefaultKnowledge()): ScanOutput {
-  const mode = "static" as const;
+// live: --live 크롤 결과 (cli.ts가 브라우저로 미리 모아 넘긴다). 없으면 정적 모드.
+export function scan(root: string, config: Config, options: ScanOptions, kb: Knowledge = loadDefaultKnowledge(), live?: LiveResult): ScanOutput {
+  const mode = live ? ("live" as const) : ("static" as const);
+  const rendered = live ? liveFacts(live, cookieMatcher(kb.trackingCookies)) : undefined;
   const files = collectFiles(root, config.ignorePaths);
   const ctx = { root, files, mode };
   // git 추적·무시 정보: git이 있으면 git으로, 없으면 .gitignore를 직접 해석한다
@@ -74,11 +86,17 @@ export function scan(root: string, config: Config, options: ScanOptions, kb: Kno
   ];
 
   const detectors = [
-    projectDetector, servicesDetector(kb.services), routesDetector(config), textDetector, formsDetector, scriptsDetector, imagesDetector,
+    projectDetector, servicesDetector(kb.services), routesDetector(config, rendered?.pages, live && new URL(live.startUrl).origin), textDetector, formsDetector, scriptsDetector, imagesDetector,
     secretsDetector({ tracked: git?.tracked, ignored }, kb.envNames), databaseDetector, patternsDetector,
   ];
   const facts = [...gitFacts, ...detectors.flatMap((d) => d.detect(ctx))];
 
+  if (rendered) {
+    // 렌더링 본문은 정적 텍스트에 더한다 (대체하지 않는다, facts.md 4.1)
+    const allText = facts.find((f) => f.key === "all_text")!;
+    allText.value = [...(allText.value as unknown[]), ...rendered.texts];
+    facts.push(...rendered.facts);
+  }
   const factMap = new Map(facts.map((f) => [f.key, f.value]));
   const evals = new Map(kb.obligations.map((o) => [o.id, evaluate(o, factMap, mode, kb.labels)]));
   const { results, warnings } = buildResults(kb.obligations, evals, config, mode);
@@ -87,7 +105,7 @@ export function scan(root: string, config: Config, options: ScanOptions, kb: Kno
     schemaVersion: 1,
     tool: { name: "vibe-signoff", version: TOOL_VERSION },
     project: { name: readPackageJson(files)?.name ?? basename(root), framework: String(factMap.get("framework") ?? "unknown") },
-    options: { mode, network: options.network, region: options.region },
+    options: { mode, ...(live ? { liveUrl: live.startUrl } : {}), network: options.network, region: options.region },
     score: summarize(results),
     results,
     knowledge: { unverified: unverifiedArticles(results) },

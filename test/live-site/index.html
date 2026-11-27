@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <title>렌더링 테스트 사이트</title>
+    <!-- 분석 툴 (정적 탐지용). 실제 요청은 보내지 않는다 -->
+    <script>
+      // gtag('config', 'G-TEST000000') 를 흉내 낸다: 동의 전에 추적 쿠키를 설정
+      document.cookie = "_ga=GA1.1.TEST; path=/";
+      document.cookie = "theme=dark; path=/";
+    </script>
+  </head>
+  <body>
+    <main>
+      <h1>렌더링 테스트</h1>
+      <p style="color: #c8c8c8; background: #ffffff">흐린 글자</p>
+
+      <form id="good">
+        <label for="email">이메일</label>
+        <input id="email" name="email" type="email" />
+        <button type="submit">가입하기</button>
+      </form>
+
+      <form id="bad">
+        <label for="phone">전화번호</label>
+        <input id="phone" name="phone" type="tel" tabindex="-1" />
+        <button type="submit">보내기</button>
+      </form>
+
+      <a href="/terms.html">이용약관</a>
+      <a href="/dynamic-refund">환불</a>
+      <a href="__OTHER_ORIGIN__/should-not-open">다른 사이트</a>
+    </main>
+    <script src="https://www.googletagmanager.com/gtag/js?id=G-TEST000000" type="text/plain"></script>
+  </body>
+</html>

@@ -28,12 +28,19 @@ const fileSchema = z
         restricted: z.array(envName), // 공개되지만 사용 제한(허용 도메인 등)이 필요한 키: 확인 필요
       })
       .strict(),
+    // 동의 전 추적 쿠키로 볼 쿠키 이름 패턴 (* = 아무 글자)
+    tracking_cookies: z.array(z.string().min(1)),
   })
   .strict();
 
 export type Service = z.infer<typeof serviceSchema>;
 export type ServicesFile = z.infer<typeof fileSchema>;
 export type EnvNames = ServicesFile["env_names"];
+
+export const cookieMatcher = (patterns: string[]) => {
+  const res = patterns.map((p) => new RegExp(`^${p.replace(/[.+?^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*")}$`));
+  return (name: string) => res.some((r) => r.test(name));
+};
 
 export function parseServices(text: string): ServicesFile {
   let raw: unknown;

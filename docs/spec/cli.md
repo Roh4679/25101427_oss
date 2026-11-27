@@ -14,7 +14,7 @@ vibe-signoff knowledge --stale <일> # verified_at이 N일보다 오래된 항�
 
 | 옵션 | 기본 | 설명 |
 |---|---|---|
-| `--live <url>` | 없음 | 렌더링 검사. 이 URL과 같은 origin의 링크만 따라간다. 최대 20페이지 |
+| `--live <url>` | 없음 | 렌더링 검사. 이 URL과 같은 origin의 링크만 따라간다. 최대 20페이지. `playwright`·`@axe-core/playwright`가 필요하다 (선택 설치, 아래 6장) |
 | `--no-network` | 꺼짐 | OSV 조회 등 모든 외부 요청을 끈다. `--live`의 대상 URL 접속은 예외 |
 | `--ai` | 꺼짐 | LLM 의미 검사 (기획서 4.6). 켤 때 무엇을 보내는지 먼저 출력한다 |
 | `--region <kr\|global>` | `kr` | 지역 기준 (쿠키 동의 등) |
@@ -66,3 +66,12 @@ zod로 검증한다. 모르는 키는 오류(종료 코드 2).
 - 모든 메시지는 한국어. "위법·불법·위반입니다" 대신 "확인 필요", "~가 보이지 않습니다".
 - 비밀값은 앞 4자 + `****`.
 - 리포트 끝에 면책 문구: "이 결과는 자동으로 확인 가능한 항목의 통과 여부이며, 법률 자문이 아니고 법적·보안적 완전성을 보장하지 않습니다."
+
+## 6. 렌더링 검사 준비 (`--live`)
+
+`playwright`와 `@axe-core/playwright`는 **선택 설치**다 (optional peer dependency). 기본 설치에는 들어가지 않고, `--live`를 쓸 때만 불러온다.
+
+- 패키지가 없으면: "`--live`에는 playwright와 @axe-core/playwright가 필요합니다. `npm i -D playwright @axe-core/playwright` 후 `npx playwright install chromium`을 실행하세요." → 종료 코드 2
+- 브라우저: Playwright Chromium → 설치된 Chrome → Edge 순서로 실행해 본다. 모두 안 되면: "렌더링에 쓸 브라우저를 찾지 못했습니다. `npx playwright install chromium`을 실행하거나 Chrome을 설치하세요." → 종료 코드 2
+- `--live` URL은 `http:` 또는 `https:`여야 한다. 아니면 종료 코드 2.
+

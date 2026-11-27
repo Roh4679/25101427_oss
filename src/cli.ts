@@ -7,6 +7,8 @@ import { renderJson } from "./reporters/json.js";
 import { renderTerminal } from "./reporters/terminal.js";
 import { scan, TOOL_VERSION } from "./scan.js";
 import { exitCodeOf } from "./score/index.js";
+import { launchBrowser, loadLiveTools } from "./rules/live/browser.js";
+import { crawl, type LiveResult } from "./rules/live/crawl.js";
 
 interface ScanFlags {
   live?: string;
@@ -20,22 +22,37 @@ interface ScanFlags {
 
 // 명세(docs/spec/cli.md)에 있지만 뒤 단계에서 구현하는 옵션
 function rejectUnimplemented(flags: ScanFlags) {
-  if (flags.live) throw new UserError("--live는 아직 지원하지 않습니다 (6단계에서 추가 예정).");
+  if (flags.live && !/^https?:\/\//i.test(flags.live)) throw new UserError(`--live 주소는 http:// 또는 https://로 시작해야 합니다: ${flags.live}`);
   if (flags.ai) throw new UserError("--ai는 아직 지원하지 않습니다.");
   if (!["terminal", "json"].includes(flags.format))
     throw new UserError(`--format ${flags.format}은 아직 지원하지 않습니다 (8단계에서 추가 예정). terminal 또는 json을 쓰세요.`);
 }
 
-function runScan(dirArg: string | undefined, flags: ScanFlags): number {
+// 사용자가 준 URL과 같은 origin만 연다. 설정 파일 pages의 같은 origin 주소도 함께 연다.
+async function renderLive(url: string, pages: string[]): Promise<LiveResult> {
+  const tools = await loadLiveTools();
+  const browser = await launchBrowser(tools);
+  try {
+    return await crawl(tools, browser, url, pages);
+  } finally {
+    await browser.close();
+  }
+}
+
+async function runScan(dirArg: string | undefined, flags: ScanFlags): Promise<number> {
   rejectUnimplemented(flags);
   const root = resolve(dirArg ?? ".");
   if (!existsSync(root) || !statSync(root).isDirectory()) throw new UserError(`폴더가 없습니다: ${root}`);
 
   const config = loadConfig(flags.config ? resolve(flags.config) : join(root, "signoff.config.json"), Boolean(flags.config));
-  const { report, warnings } = scan(root, config, {
-    network: flags.network,
-    region: flags.region ?? config.region ?? "kr",
-  });
+  const live = flags.live ? await renderLive(flags.live, Object.values(config.pages ?? {}).filter((v): v is string => Boolean(v))) : undefined;
+  const { report, warnings } = scan(
+    root,
+    config,
+    { network: flags.network, region: flags.region ?? config.region ?? "kr" },
+    undefined,
+    live,
+  );
 
   for (const w of warnings) process.stderr.write(`경고: ${w}
 `);
@@ -63,12 +80,12 @@ program
   .addOption(new Option("--format <format>", "리포트 형식").choices(["terminal", "json", "markdown", "html", "sarif"]).default("terminal"))
   .option("--output <file>", "리포트 저장 경로")
   .option("--config <file>", "설정 파일 (기본: <dir>/signoff.config.json)")
-  .action((dir: string | undefined, flags: ScanFlags) => {
-    process.exitCode = runScan(dir, flags);
+  .action(async (dir: string | undefined, flags: ScanFlags) => {
+    process.exitCode = await runScan(dir, flags);
   });
 
 try {
-  program.parse();
+  await program.parseAsync();
 } catch (err) {
   if (err instanceof CommanderError) {
     // 도움말·버전 출력은 정상 종료
