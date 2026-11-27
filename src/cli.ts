@@ -32,11 +32,13 @@ function runScan(dirArg: string | undefined, flags: ScanFlags): number {
   if (!existsSync(root) || !statSync(root).isDirectory()) throw new UserError(`폴더가 없습니다: ${root}`);
 
   const config = loadConfig(flags.config ? resolve(flags.config) : join(root, "signoff.config.json"), Boolean(flags.config));
-  const { report } = scan(root, config, {
+  const { report, warnings } = scan(root, config, {
     network: flags.network,
     region: flags.region ?? config.region ?? "kr",
   });
 
+  for (const w of warnings) process.stderr.write(`경고: ${w}
+`);
   const text = flags.format === "json" ? renderJson(report) : renderTerminal(report);
   if (flags.output) writeFileSync(flags.output, text);
   else process.stdout.write(text);

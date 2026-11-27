@@ -45,8 +45,20 @@ export function renderTerminal(report: Report): string {
     for (const r of open) {
       lines.push(`  [${STATUS_LABEL[r.status]}] ${r.id}${r.message ? ` — ${r.message}` : ""}`);
       if (r.fix) lines.push(`      해결: ${r.fix}`);
+      const todo = r.findings.flatMap((f) => f.policyTodo ?? []);
+      if (todo.length > 0) {
+        lines.push("      새로 만들 처리방침에 포함할 항목:");
+        for (const t of todo) lines.push(`        - ${t.item}`);
+      }
       if (r.mitigated) lines.push("      `--live`로 다시 확인하거나 `confirmations`에 확인 결과를 적으세요.");
     }
+  }
+  const waiting = report.results.filter((r) => r.naReason === "dependency");
+  const unverified = report.results.filter((r) => r.configPage && !r.configPage.verified);
+  if (waiting.length > 0 || unverified.length > 0) {
+    lines.push("", "참고");
+    for (const r of unverified) lines.push(`  [통과] ${r.id} — 설정으로 지정됨(미검증): ${r.configPage!.url}`);
+    for (const r of waiting) lines.push(`  [해당 없음] ${r.id} — 상위 의무가 통과하면 평가합니다.`);
   }
   if (report.results.length === 0) lines.push("", "적용된 검사 항목이 없습니다 (지식 베이스가 비어 있음).");
 

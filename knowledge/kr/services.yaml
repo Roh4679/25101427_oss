@@ -1,0 +1,20 @@
+# 해외 서버로 이전될 수 있는 서비스 (docs/spec/evidence-dsl.md 6장)
+# 지역 선택이 가능한 서비스가 있으므로 국가는 적지 않는다. 실제 이전 여부는 사용자가 확인한다.
+# 패키지 이름은 npm에서 실제로 있는지 확인한 뒤 적는다 (확인일 2026-11-27).
+- name: Supabase
+  packages: ["@supabase/*"]
+  hosts: ["*.supabase.co"]
+  files: ["supabase/**"]
+- name: Firebase
+  packages: ["firebase", "firebase-admin"]
+  hosts: ["*.firebaseio.com", "firestore.googleapis.com"]
+  files: ["firebase.json"]
+- name: OpenAI
+  packages: ["openai"]
+  hosts: ["api.openai.com"]
+- name: Anthropic
+  packages: ["@anthropic-ai/sdk"]
+  hosts: ["api.anthropic.com"]
+- name: Vercel
+  packages: ["@vercel/*"]
+  files: ["vercel.json"]

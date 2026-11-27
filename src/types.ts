@@ -2,6 +2,17 @@
 
 export type Loc = { file: string; line: number };
 
+export interface PageRoute {
+  path: string;
+  file?: string;
+  external?: string;
+  source: "file-route" | "code-route" | "footer-link" | "config" | "live";
+  kind?: "privacy" | "terms" | "refund";
+  link_text?: string;
+  title?: string;
+  text?: string;
+}
+
 export interface Fact {
   key: string;
   value: unknown;
@@ -30,15 +41,6 @@ export type Status = "pass" | "partial" | "needs_review" | "fail" | "na";
 export type Verdict = "ready" | "ready_with_fixes" | "needs_work" | "blocked";
 export type Grade = "critical" | "high" | "medium" | "low";
 export type Factors = { L: number; I: number; P: number };
-
-// 지식 베이스 항목. 3단계에서 zod 스키마(z.infer)로 대체한다.
-export interface Obligation {
-  id: string;
-  category: Category;
-  check: "auto" | "semi";
-  factors: Factors;
-  depends_on?: string;
-}
 
 export interface Finding {
   location?: { file?: string; line?: number; url?: string };

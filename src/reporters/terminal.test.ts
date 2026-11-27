@@ -40,6 +40,19 @@ describe("renderTerminal", () => {
     expect(out).toContain("`confirmations`에 확인 결과를 적으세요");
   });
 
+  it("처리방침 포함 항목, 하위 의무 대기, 미검증 설정 페이지", () => {
+    const out = renderTerminal(
+      report([
+        result({ findings: [{ message: "m", fix: "f", policyTodo: [{ from: "privacy/analytics-disclosure", item: "분석 도구: ga4" }] }] }),
+        result({ id: "privacy/cookie-consent", status: "na", score: null, naReason: "dependency" }),
+        result({ id: "legal/terms-page", status: "pass", score: 1, configPage: { url: "https://x.notion.site/t", verified: false } }),
+      ]),
+    );
+    expect(out).toContain("새로 만들 처리방침에 포함할 항목:\n        - 분석 도구: ga4");
+    expect(out).toContain("[해당 없음] privacy/cookie-consent — 상위 의무가 통과하면 평가합니다.");
+    expect(out).toContain("설정으로 지정됨(미검증): https://x.notion.site/t");
+  });
+
   it("사용자 메시지에 금지 표현이 없다", () => {
     const out = renderTerminal(report([result({})]));
     expect(out).not.toMatch(/위법|불법|위반입니다/);

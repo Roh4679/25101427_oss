@@ -22,7 +22,7 @@ export function readPackageJson(files: SourceFile[]): PackageJson | undefined {
   }
 }
 
-const CODE_FILE = /\.(js|jsx|ts|tsx|mjs|cjs|vue|svelte|html?)$/;
+export const CODE_FILE = /\.(js|jsx|ts|tsx|mjs|cjs|vue|svelte|html?)$/;
 const NEXT_APP_PAGE = /^(src\/)?app\/(.*\/)?page\.(tsx|jsx|ts|js)$/;
 const NEXT_PAGES = /^(src\/)?pages\/.+\.(tsx|jsx|ts|js)$/;
 const STATIC_HTML = /^(public\/)?[^/]+\.html$/;
