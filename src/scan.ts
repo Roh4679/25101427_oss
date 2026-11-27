@@ -10,6 +10,11 @@ import { loadServices, type Service } from "./knowledge/services.js";
 import { collectFiles } from "./scanner/files.js";
 import { projectDetector, readPackageJson } from "./scanner/project.js";
 import { servicesDetector } from "./scanner/services.js";
+import { routesDetector } from "./scanner/routes/index.js";
+import { formsDetector } from "./rules/static/forms.js";
+import { imagesDetector } from "./rules/static/images.js";
+import { scriptsDetector } from "./rules/static/scripts.js";
+import { textDetector } from "./rules/static/text.js";
 import { summarize } from "./score/index.js";
 import { buildResults } from "./score/results.js";
 import type { Fact, Report, Result } from "./types.js";
@@ -55,7 +60,8 @@ export function scan(root: string, config: Config, options: ScanOptions, kb: Kno
   const mode = "static" as const;
   const files = collectFiles(root, config.ignorePaths);
   const ctx = { root, files, mode };
-  const facts = [projectDetector, servicesDetector(kb.services)].flatMap((d) => d.detect(ctx));
+  const detectors = [projectDetector, servicesDetector(kb.services), routesDetector(config), textDetector, formsDetector, scriptsDetector, imagesDetector];
+  const facts = detectors.flatMap((d) => d.detect(ctx));
 
   const factMap = new Map(facts.map((f) => [f.key, f.value]));
   const evals = new Map(kb.obligations.map((o) => [o.id, evaluate(o, factMap, mode, kb.labels)]));

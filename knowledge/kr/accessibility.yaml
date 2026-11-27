@@ -1,0 +1,23 @@
+# 접근성 의무. 조문은 law.go.kr 원문 확인 전까지 TODO-확인필요 (evidence-dsl.md 9장).
+
+- id: accessibility/img-alt
+  category: accessibility
+  check: auto
+  # L2: 적용 대상이 제한적인 의무 / I1: 사용성 저하 / P3: alt 누락이 흔함 (기획서 5.2 A11Y-01)
+  factors: { L: 2, I: 1, P: 3 }
+  trigger: img_missing_alt
+  evidence:
+    - coverage: img_missing_alt
+  message: 대체 텍스트(alt)가 없는 이미지가 있습니다.
+  fix: 이미지에 내용을 설명하는 alt를 넣으세요. 꾸밈용 이미지라면 alt=""로 비워 두세요.
+  principle:
+    law: 장애인차별금지 및 권리구제 등에 관한 법률
+    article: TODO-확인필요
+    source: null
+    verified_at: null
+    references:
+      - candidate: 법 제21조, 시행령 제14조
+        basis: 2차 자료 (사용자 제공, 2026-11-28)
+  technical_reference:
+    - name: 한국형 웹 콘텐츠 접근성 지침(KWCAG)
+      item: TODO-확인필요

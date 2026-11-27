@@ -1,0 +1,15 @@
+# 운영 권고 (법적 의무 아님). 결제가 있으면 commerce/terms-display(7단계)가 대신 적용된다 (evidence-dsl.md 4장).
+
+- id: legal/terms-page
+  category: ux
+  check: auto
+  # L1: 무료 서비스에는 약관 게시 법적 의무 없음, 운영 권고 (사용자 결정 2026-11-28) / I2: 분쟁 시 근거 부족 / P3: 흔히 빠짐
+  factors: { L: 1, I: 2, P: 3 }
+  trigger: { not: payment_sdks }
+  trace: ["이용약관", "terms of service", "terms of use"]
+  evidence:
+    - page_exists: { kind: terms, match: ["terms", "이용약관"] }
+  message: 이용약관 페이지나 링크가 보이지 않습니다.
+  fix: >-
+    이용약관 페이지를 만들고 푸터에 링크하세요.
+    외부 페이지에 있다면 signoff.config.json의 pages.terms에 주소를 지정하세요.

@@ -75,8 +75,8 @@ interface PageRoute {
 |---|---|---|---|---|
 | `personal_forms` | `PersonalForm[]` | `forms` | 개인정보 필드가 하나 이상 있는 폼 | 4 |
 | `collects_personal_info` | `boolean` | `forms` | `personal_forms`가 비어 있지 않거나, 회원가입 API 호출(`supabase.auth.signUp`, `createUserWithEmailAndPassword`)이 있음 | 4 |
-| `analytics_scripts` | `{ vendor: string } & Loc[]` | `analytics` | `ga4`, `gtm`, `meta_pixel`, `mixpanel`, `kakao_pixel`, `naver_analytics` 등 | 4 |
-| `external_embeds` | `{ domain: string; tag: "iframe" \| "script" } & Loc[]` | `embeds` | 외부 도메인 iframe·script. 분석 툴로 이미 분류된 것은 제외 | 4 |
+| `analytics_scripts` | `{ vendor: string } & Loc[]` | `scripts` | `ga4`, `gtm`, `meta_pixel`, `mixpanel`, `kakao_pixel`, `naver_analytics` 등 | 4 |
+| `external_embeds` | `{ domain: string; tag: "iframe" \| "script" } & Loc[]` | `scripts` | 외부 도메인 iframe·script. 분석 툴로 이미 분류된 것은 제외 | 4 |
 
 ```ts
 interface PersonalForm extends Loc {
