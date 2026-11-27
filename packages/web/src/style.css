@@ -53,6 +53,8 @@ button, .file-btn {
 button:hover, .file-btn:hover { background: #e6e9ec; }
 button:focus-visible, .file-btn:focus-within, textarea:focus-visible { outline: 2px solid var(--info-b); outline-offset: 2px; }
 .danger { color: var(--high-b); border-color: var(--high-b); }
+.primary { background: var(--info-b); border-color: var(--info-b); color: #fff; font-weight: 600; }
+.primary:hover { background: #1b4585; }
 
 .badge { display: inline-block; padding: 0.3rem 0.7rem; border-radius: 6px; font-size: 0.9rem; }
 .badge.ok { background: #e3f4e6; color: #1e6b2e; }

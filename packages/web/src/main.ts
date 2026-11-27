@@ -148,6 +148,11 @@ $<HTMLInputElement>('file').addEventListener('change', (e) => {
   if (f) loadFile(f);
   (e.target as HTMLInputElement).value = '';
 });
+$('scan').addEventListener('click', () => {
+  clearTimeout(debounce);
+  update();
+  $('h-result').scrollIntoView({ behavior: 'smooth' });
+});
 $('copy-masked').addEventListener('click', () => copy(masked.value, $('copy-msg')));
 $('copy-restored').addEventListener('click', () => copy(restored.value, $('restore-msg')));
 $('clear').addEventListener('click', clearAll);
@@ -170,6 +175,7 @@ document.addEventListener('visibilitychange', () => {
   if (document.hidden) timer = setTimeout(clearAll, AUTO_CLEAR_MS);
 });
 
+$('js-warn').remove();
 const net = $('net');
 const policy = document.querySelector('meta[http-equiv="Content-Security-Policy"]')?.getAttribute('content') ?? '';
 if (policy.includes("connect-src 'none'")) {
