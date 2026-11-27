@@ -14,6 +14,16 @@ vibe-signoff(MIT)가 가져다 쓰거나 참고한 외부 오픈소스·표준�
 |---|---|---|---|---|
 | SARIF 2.1.0 (OASIS 표준) | OASIS 표준 문서 | 참고 | `docs/spec/report-schema.md` 4장 SARIF 출력 대응표 | 2026-11-27 |
 | Google 태그(gtag.js) 설치 스니펫 | — (공개 설치 안내) | 참고 | `fixtures/intentional/clean-app/app/layout.tsx`, `signup-app/pages/_app.tsx`: 분석 툴 탐지 테스트용 최소 스니펫을 직접 작성 | 2026-11-27 |
+| commander 14.0.3 | MIT | 의존성 | `src/cli.ts` 명령·옵션 파싱 | 2026-11-27 |
+| zod 4.6.7 | MIT | 의존성 | `src/config.ts`, `src/scanner/project.ts`(package.json), 골든 테스트 정답지 검증 | 2026-11-27 |
+| typescript 6.0.3 | Apache-2.0 | 의존성 (dev) | 빌드·타입 검사 | 2026-11-27 |
+| @types/node 20.x | MIT | 의존성 (dev) | Node 타입 정의 | 2026-11-27 |
+| eslint 10.15.0 | MIT | 의존성 (dev) | 린트 | 2026-11-27 |
+| typescript-eslint 8.74.0 | MIT | 의존성 (dev) | `eslint.config.js` TS 규칙 | 2026-11-27 |
+| tsx 4.23.15 | MIT | 의존성 (dev) | `npm run dev` | 2026-11-27 |
+| vitest 4.1.12 | MIT | 의존성 (dev) | 단위·골든 테스트 | 2026-11-27 |
+
+버전 선택: commander 15·vitest 5는 Node 22.12 이상을 요구해 Node 20 지원(`engines`)을 위해 한 단계 아래 메이저를 쓴다. typescript-eslint 8.74가 TypeScript 6.1 미만만 지원해 typescript는 6.0을 쓴다.
 
 fixture의 `package.json`에 적힌 `next`, `react`, `@supabase/supabase-js`, `openai`, `vite`는 **이름만** 적은 것이다. 설치하지 않고 저장소에 포함하지도 않는다.
 
@@ -23,10 +33,7 @@ fixture의 `package.json`에 적힌 `next`, `react`, `@supabase/supabase-js`, `o
 
 | 이름 | 라이선스 (기획서 기준, 추가 시 재확인) | 구분 | 쓸 곳 | 단계 |
 |---|---|---|---|---|
-| commander | 추가 시 확인 | 의존성 | `src/cli.ts` | 2 |
-| zod | 추가 시 확인 | 의존성 | 설정·YAML·외부 JSON 검증 | 2 |
 | js-yaml | 추가 시 확인 | 의존성 | `src/knowledge/` 로더 | 3 |
-| vitest | 추가 시 확인 | 의존성 (dev) | 테스트 | 2 |
 | @babel/parser | MIT | 의존성 | 정규식 오탐이 확인된 규칙만 | 필요 시 |
 | pgsql-ast-parser | MIT | 의존성 | Supabase RLS 탐지 | 5 |
 | gitleaks | MIT | 외부 실행 + 패턴 참고 | `src/adapters/gitleaks`. 패턴을 이식하면 이 표를 "복사"로 바꾸고 출처·라이선스 전문을 남긴다 | 5 |
