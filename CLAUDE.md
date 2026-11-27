@@ -54,7 +54,7 @@ docs/               knowledge-guide.md, scoring.md
 
 ## 코딩 규칙
 
-- TypeScript `strict`, ESM, Node 20 이상.
+- TypeScript `strict`, ESM, Node 22.12 이상.
 - 외부 입력(YAML, 설정 파일, 외부 도구 JSON)은 반드시 zod로 검증한다.
 - 식별자는 영어, **코드 주석과 사용자에게 보이는 메시지는 한국어**로 쓴다.
 - 함수는 작게, 부수효과는 경계(CLI, 파일 I/O, 브라우저)에만 둔다. 탐지 규칙과 평가기는 테스트하기 쉬운 순수 함수로 만든다.

@@ -472,7 +472,7 @@ interface Finding {
 
 | 용도 | 기술 |
 |---|---|
-| 언어·런타임 | TypeScript (strict, ESM), Node.js 20 이상 |
+| 언어·런타임 | TypeScript (strict, ESM), Node.js 22.12 이상 |
 | CLI | commander |
 | 지식 베이스 | YAML (js-yaml), 스키마 검증 (zod) |
 | 코드 분석 | 정규식으로 시작 → 필요 시 @babel/parser 또는 ts-morph |

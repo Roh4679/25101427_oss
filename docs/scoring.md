@@ -219,3 +219,20 @@
 | T61 | `--live`, GA 사용, 처리방침 없음, 동의 전 `_ga` 쿠키 설정 | `privacy/cookie-before-consent` 평가됨 (`depends_on` 없음). `privacy/cookie-consent`는 `na` (dependency) |
 | T62 | 정적 모드, GA 사용 | `privacy/cookie-before-consent` `na` (`naReason: mode`) |
 | T63 | `--live`, 동의 전 추적 쿠키 없음 | `pass` |
+
+**키 노출과 git 추적 (`security/secret-exposure`, 5단계, facts.md 6장)**
+
+| # | 입력 | 기대 결과 |
+|---|---|---|
+| T64 | `.env`가 `gitignored`, `git_tracked`에 없음 | `pass` |
+| T65 | `.env`가 `gitignored`인데 `git_tracked`에 있음 (강제 추가) | `fail`, 차단 (`env_files_exposed` reason `tracked`) |
+| T66 | `.env`가 있고 `.gitignore`가 없음 | `fail`, 차단 (reason `not_ignored`) |
+| T67 | `.env.example`만 있고 무시되지 않음 | `pass` (`env_files`에서 제외) |
+| T68 | 무시된 `.env`에 `NEXT_PUBLIC_OPENAI_API_KEY=sk-...` | `fail`, 차단 (`public_env`) |
+| T69 | 무시된 `.env`에 `VITE_STRIPE_SECRET_KEY=sk_live_...` | `fail`, 차단 (`public_env`) |
+| T70 | `src/api.ts`에 `"sk-proj-..."` 문자열 | `fail`, 차단 (`hardcoded`), 출력에는 `sk-p****`만 |
+| T71 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` 사용 | `pass` (공개용 키) |
+| T72 | git 미설치 또는 저장소 아님, `.gitignore`에 `.env*` | `git_tracked` Fact 없음, `gitignored`는 `.gitignore` 해석으로 → `pass` |
+| T73 | fixture `clean-app` (무시된 `.env`에 `SUPABASE_SERVICE_ROLE_KEY`) | 100점, `ready`, 정답지 변화 없음 |
+| T74 | 골든 테스트 (`git: false`), fixture의 `.env`가 vibe-signoff 저장소에 강제 추가돼 있음 | `git_tracked` Fact 없음 → 저장소 추적 정보가 판정에 영향 없음 |
+| T75 | `.gitignore`의 부정 패턴 `.env*` + `!.env.example` | `.env.local`은 `gitignored`, `.env.example`은 아님 |

@@ -134,12 +134,30 @@ type FieldKind = "email" | "phone" | "name" | "birth" | "gender" | "address" | "
 
 | 키 | 타입 | 생성 | 설명 | 단계 |
 |---|---|---|---|---|
-| `secrets_exposed` | `{ rule: string; masked: string; via: "hardcoded" \| "public_env" \| "env_file" } & Loc[]` | `secrets` / adapters/gitleaks | 비밀값 후보. `NEXT_PUBLIC_SUPABASE_ANON_KEY`, Firebase web `apiKey`처럼 **공개용으로 설계된 키는 제외** | 5 |
-| `env_files_unignored` | `Loc[]` | `secrets` | `.env*` 파일이 있는데 `.gitignore`가 없거나 무시하지 않음 (`.env.example` 제외) | 5 |
+| `git_tracked` | `string[]` | adapters/git | 수집한 파일 중 git이 추적하는 파일 경로. **git이 없거나 저장소가 아니거나 `git: false`면 Fact를 만들지 않는다** (추적 여부 모름) | 5 |
+| `gitignored` | `string[]` | adapters/git / `gitignore` | 수집한 파일 중 무시 규칙에 걸리는 파일 경로. git이 있으면 `git check-ignore`, 없으면 스캔 루트 안의 `.gitignore`들을 직접 해석한다 (fallback) | 5 |
+| `env_files` | `{ path: string; gitignored: boolean; git_tracked: boolean \| null }[]` | `secrets` | `.env`, `.env.*` 파일 (`.env.example`, `.env.sample`, `.env.template` 제외). `git_tracked`가 없으면 `null` | 5 |
+| `env_files_exposed` | `{ reason: "tracked" \| "not_ignored" } & Loc[]` | `secrets` | `env_files` 중 `git_tracked: true`이거나 `gitignored: false`인 파일. 둘 다면 `tracked` | 5 |
+| `secrets_exposed` | `{ rule: string; masked: string; via: "hardcoded" \| "public_env" \| "env_file" } & Loc[]` | `secrets` / adapters/gitleaks | 비밀값 후보. `via`: `hardcoded` = 소스 코드에 직접 씀, `public_env` = 클라이언트에 노출되는 변수(`NEXT_PUBLIC_*`, `VITE_*`)에 비밀값, `env_file` = 그 밖의 `.env` 변수. `NEXT_PUBLIC_SUPABASE_ANON_KEY`, Firebase web `apiKey`처럼 **공개용으로 설계된 키는 제외** | 5 |
 | `supabase_tables_without_rls` | `{ table: string } & Loc[]` | `supabase` | 마이그레이션 SQL에서 `create table` 후 `enable row level security`가 없는 public 테이블 | 5 |
 | `service_role_in_client` | `Loc[]` | `supabase` | 클라이언트 번들 대상 파일에서 service_role 키·변수 사용 | 5 |
 | `firebase_open_rules` | `Loc[]` | `firebase` | `firestore.rules`, `storage.rules`, `database.rules.json`의 `if true` / `".read": true` | 5 |
 | `dangerous_patterns` | `{ kind: "eval" \| "dangerously_set_inner_html" \| "cors_wildcard" \| "unauth_api_route" } & Loc[]` | `patterns` / adapters/semgrep | 위험 패턴 위치 | 5 |
+
+
+git 추적 규칙
+- 파일 수집은 `.gitignore`와 상관없이 모든 파일을 읽는다. 무시 여부는 위 Fact로만 전달한다.
+- `git`은 `src/adapters/git`에서만 실행한다 (`git ls-files`, `git check-ignore --stdin`). 사용자 프로젝트의 스크립트는 실행하지 않는다.
+- 골든 테스트는 `git: false`로 실행한다. fixture는 vibe-signoff 저장소에 커밋돼 있어, 저장소의 추적 정보가 fixture 판정에 섞이면 안 된다.
+- `security/secret-exposure` 판정 (5단계 YAML):
+
+  | 상황 | 결과 |
+  |---|---|
+  | `.env`가 `gitignored`이고 추적되지 않음(또는 추적 여부 모름) | 정상 |
+  | `.env`가 추적됨, 또는 무시되지 않음 (`env_files_exposed`) | 실패 → 차단 |
+  | `secrets_exposed`에 `via: public_env` (`.env`가 무시돼도) | 실패 → 차단 |
+  | `secrets_exposed`에 `via: hardcoded` | 실패 → 차단 |
+  | `via: env_file`만 있고 그 `.env`가 정상 | 정상 |
 
 ## 7. 렌더링 (src/rules/live, `--live` 일 때만)
 

@@ -1,5 +1,4 @@
 {
-  "$comment": "초안. 사용자 검토 후 expected.json으로 확정한다.",
   "fixture": "clean-app",
   "options": { "mode": "static", "network": false, "region": "kr" },
   "results": {
