@@ -1,0 +1,31 @@
+{
+  "$comment": "초안. 사용자 검토 후 expected.json으로 확정한다.",
+  "fixture": "clean-app",
+  "options": { "mode": "static", "network": false, "region": "kr" },
+  "results": {
+    "security/secret-exposure": "pass",
+    "security/db-access": "pass",
+    "security/dangerous-patterns": "pass",
+    "security/dependencies": "na",
+    "privacy/policy-page": "pass",
+    "privacy/policy-contents": "pass",
+    "privacy/overseas-transfer": "pass",
+    "privacy/analytics-disclosure": "pass",
+    "privacy/embed-disclosure": "na",
+    "privacy/consent-checkbox": "pass",
+    "privacy/minimal-collection": "pass",
+    "privacy/cookie-consent": "pass",
+    "commerce/business-info": "na",
+    "commerce/refund-policy": "na",
+    "legal/terms-page": "pass",
+    "advertising/unsupported-claims": "pass",
+    "advertising/fake-reviews": "na",
+    "accessibility/img-alt": "pass",
+    "accessibility/color-contrast": "na",
+    "accessibility/keyboard-form": "na",
+    "accessibility/axe-summary": "na",
+    "ux/button-labels": "pass"
+  },
+  "verdict": "ready",
+  "score": 100
+}

@@ -1,0 +1,32 @@
+{
+  "$comment": "초안. 사용자 검토 후 expected.json으로 확정한다.",
+  "fixture": "leaky-keys-app",
+  "options": { "mode": "static", "network": false, "region": "kr" },
+  "results": {
+    "security/secret-exposure": "fail",
+    "security/db-access": "na",
+    "security/dangerous-patterns": "pass",
+    "security/dependencies": "na",
+    "privacy/policy-page": "na",
+    "privacy/policy-contents": "na",
+    "privacy/overseas-transfer": "na",
+    "privacy/analytics-disclosure": "na",
+    "privacy/embed-disclosure": "na",
+    "privacy/consent-checkbox": "na",
+    "privacy/minimal-collection": "na",
+    "privacy/cookie-consent": "na",
+    "commerce/business-info": "na",
+    "commerce/refund-policy": "na",
+    "legal/terms-page": "pass",
+    "advertising/unsupported-claims": "pass",
+    "advertising/fake-reviews": "na",
+    "accessibility/img-alt": "partial",
+    "accessibility/color-contrast": "na",
+    "accessibility/keyboard-form": "na",
+    "accessibility/axe-summary": "na",
+    "ux/button-labels": "needs_review"
+  },
+  "verdict": "blocked",
+  "blockers": ["security/secret-exposure"],
+  "score": 55
+}

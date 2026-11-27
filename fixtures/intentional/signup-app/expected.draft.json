@@ -1,0 +1,32 @@
+{
+  "$comment": "초안. 사용자 검토 후 expected.json으로 확정한다.",
+  "fixture": "signup-app",
+  "options": { "mode": "static", "network": false, "region": "kr" },
+  "results": {
+    "security/secret-exposure": "pass",
+    "security/db-access": "na",
+    "security/dangerous-patterns": "pass",
+    "security/dependencies": "na",
+    "privacy/policy-page": "needs_review",
+    "privacy/policy-contents": "needs_review",
+    "privacy/overseas-transfer": "na",
+    "privacy/analytics-disclosure": "fail",
+    "privacy/embed-disclosure": "na",
+    "privacy/consent-checkbox": "fail",
+    "privacy/minimal-collection": "needs_review",
+    "privacy/cookie-consent": "needs_review",
+    "commerce/business-info": "na",
+    "commerce/refund-policy": "na",
+    "legal/terms-page": "pass",
+    "advertising/unsupported-claims": "pass",
+    "advertising/fake-reviews": "na",
+    "accessibility/img-alt": "pass",
+    "accessibility/color-contrast": "na",
+    "accessibility/keyboard-form": "na",
+    "accessibility/axe-summary": "na",
+    "ux/button-labels": "pass"
+  },
+  "verdict": "blocked",
+  "blockers": ["privacy/consent-checkbox"],
+  "score": 58
+}

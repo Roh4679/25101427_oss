@@ -10,3 +10,6 @@ Thumbs.db
 .vscode/
 .idea/
 .claude/settings.local.json
+
+# fixture에 일부러 넣은 .env는 커밋한다 (가짜 키)
+!fixtures/**/.env
