@@ -16,6 +16,7 @@ const report = (results: Result[]): Report => ({
   options: { mode: "static", network: true, region: "kr" },
   score: summarize(results),
   results,
+  knowledge: { unverified: results.filter((r) => r.principle?.article === "TODO-확인필요").map((r) => r.id) },
   disclaimer: "면책 문구",
 });
 
@@ -36,7 +37,7 @@ describe("renderTerminal", () => {
         result({
           message: "개인정보 처리방침이 보이지 않습니다.",
           fix: "처리방침을 만드세요.",
-          principle: { law: "개인정보 보호법", article: "TODO-확인필요", source: "https://www.law.go.kr", verified_at: "2026-11-27" },
+          principle: { law: "개인정보 보호법", article: "제30조", source: "https://www.law.go.kr", verified_at: "2026-11-27" },
         }),
       ]),
     );
@@ -46,9 +47,16 @@ describe("renderTerminal", () => {
     expect(first).toBeGreaterThan(0);
     expect(rest).toBeGreaterThan(first);
     expect(out).toContain("  1. [치명] privacy/policy-page — 개인정보 처리방침이 보이지 않습니다.");
-    expect(out).toContain("     근거: 개인정보 보호법 TODO-확인필요 (확인일 2026-11-27)");
+    expect(out).toContain("     근거: 개인정보 보호법 제30조 (확인일 2026-11-27)");
     expect(out).toContain("     가중치 근거: L3 × I2 × P3 = 18");
     expect(out).toContain("  - [낮음] ux/button-labels — 버튼 문구 확인\n    상태: 확인 필요");
+  });
+
+  it("조문 미확인: 근거 줄은 '조문 확인 전', 끝에 미확인 의무 수", () => {
+    const todo = { law: "개인정보 보호법", article: "TODO-확인필요", source: null, verified_at: null };
+    const out = renderTerminal(report([result({ principle: todo })]));
+    expect(out).toContain("근거: 개인정보 보호법 — 조문 확인 전");
+    expect(out).toContain("조문 미확인 의무 1개: privacy/policy-page");
   });
 
   it("확인할 항목은 가중치가 큰 것부터", () => {

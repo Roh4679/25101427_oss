@@ -81,12 +81,24 @@ export const obligationSchema = z
     message: z.string().min(1).optional(),
     fix: z.string().min(1).optional(),
     principle: z
-      .object({ law: z.string().min(1), article: z.string().min(1), source: z.string().min(1), verified_at: z.string().regex(/^\d{4}-\d{2}-\d{2}$/) })
+      .object({
+        law: z.string().min(1),
+        article: z.string().min(1),
+        source: z.string().url().nullable(),
+        verified_at: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "YYYY-MM-DD").nullable(),
+        references: z
+          .array(z.object({ candidate: z.string().min(1), basis: z.string().min(1), note: z.string().min(1).optional() }).strict())
+          .optional(),
+      })
       .strict()
       .optional(),
+    technical_reference: z.array(z.object({ name: z.string().min(1), item: z.string().min(1) }).strict()).optional(),
   })
   .strict();
 
 export type Obligation = z.infer<typeof obligationSchema>;
+
+// 조문 미확인 표시 (evidence-dsl.md 9장)
+export const ARTICLE_TODO = "TODO-확인필요";
 
 export const knowledgeFileSchema = z.array(obligationSchema);

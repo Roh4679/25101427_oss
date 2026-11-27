@@ -67,7 +67,14 @@ export interface Result {
   naReason?: "trigger" | "disabled" | "mode" | "dependency";
   message?: string;
   fix?: string;
-  principle?: { law: string; article: string; source: string; verified_at: string };
+  principle?: {
+    law: string;
+    article: string;
+    source: string | null;
+    verified_at: string | null;
+    references?: { candidate: string; basis: string; note?: string }[];
+  };
+  technicalReference?: { name: string; item: string }[];
   configPage?: { url: string; verified: boolean; httpStatus?: number };
   findings: Finding[];
 }
@@ -86,5 +93,6 @@ export interface Report {
   options: { mode: "static" | "live"; liveUrl?: string; network: boolean; region: "kr" | "global" };
   score: ScoreSummary;
   results: Result[];
+  knowledge: { unverified: string[] }; // 적용된 의무 중 조문 미확인 id
   disclaimer: string;
 }

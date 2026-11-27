@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 import type { Config } from "./config.js";
 import { evaluate } from "./knowledge/evaluate.js";
 import { loadKnowledge } from "./knowledge/loader.js";
-import type { Obligation } from "./knowledge/schema.js";
+import { ARTICLE_TODO, type Obligation } from "./knowledge/schema.js";
 import { loadLabels, type Labels } from "./knowledge/labels.js";
 import { loadServices, type Service } from "./knowledge/services.js";
 import { collectFiles } from "./scanner/files.js";
@@ -12,7 +12,7 @@ import { projectDetector, readPackageJson } from "./scanner/project.js";
 import { servicesDetector } from "./scanner/services.js";
 import { summarize } from "./score/index.js";
 import { buildResults } from "./score/results.js";
-import type { Fact, Report } from "./types.js";
+import type { Fact, Report, Result } from "./types.js";
 
 export const DISCLAIMER =
   "이 결과는 자동으로 확인 가능한 항목의 통과 여부이며, 법률 자문이 아니고 법적·보안적 완전성을 보장하지 않습니다.";
@@ -34,6 +34,10 @@ export const loadDefaultKnowledge = (): Knowledge => ({
   services: loadServices(`${KNOWLEDGE_DIR}services.yaml`),
   labels: loadLabels(`${KNOWLEDGE_DIR}labels.yaml`),
 });
+
+// 적용된(N/A가 아닌) 의무 중 조문을 사람이 아직 확인하지 않은 것
+export const unverifiedArticles = (results: Result[]) =>
+  results.filter((r) => r.status !== "na" && r.principle?.article === ARTICLE_TODO).map((r) => r.id);
 
 export interface ScanOptions {
   network: boolean;
@@ -64,6 +68,7 @@ export function scan(root: string, config: Config, options: ScanOptions, kb: Kno
     options: { mode, network: options.network, region: options.region },
     score: summarize(results),
     results,
+    knowledge: { unverified: unverifiedArticles(results) },
     disclaimer: DISCLAIMER,
   };
   return { facts, report, warnings };

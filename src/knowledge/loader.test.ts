@@ -96,6 +96,38 @@ describe("parseKnowledge", () => {
   });
 });
 
+describe("principle (evidence-dsl.md 9장)", () => {
+  const privacy = (principle: string) =>
+    `- id: privacy/a\n  category: privacy\n  check: auto\n  factors: { L: 1, I: 1, P: 1 }\n  message: m\n  fix: f\n${principle}  evidence: [{ truthy: uses_vercel }]`;
+
+  it("privacy·commerce·advertising·accessibility는 principle 필수, security·ux는 선택", () => {
+    expect(errorOf(privacy(""))).toMatch(/privacy 영역은 principle/);
+    expect(parse(ob("  evidence: [{ truthy: uses_vercel }]"))).toHaveLength(1); // ux
+  });
+
+  it("미확인: article TODO + source·verified_at null + references", () => {
+    const yaml = privacy(
+      "  principle:\n    law: 개인정보 보호법\n    article: TODO-확인필요\n    source: null\n    verified_at: null\n    references:\n      - { candidate: 법 제30조, basis: 2차 자료 }\n",
+    );
+    expect(parse(yaml)[0]!.principle?.references?.[0]?.candidate).toBe("법 제30조");
+  });
+
+  it("article이 TODO인데 verified_at에 날짜 → 오류", () => {
+    const yaml = privacy("  principle: { law: 법, article: TODO-확인필요, source: null, verified_at: 2026-11-28 }\n");
+    expect(errorOf(yaml)).toMatch(/null이어야 합니다/);
+  });
+
+  it("article을 채웠는데 verified_at·source가 null → 오류", () => {
+    const yaml = privacy("  principle: { law: 법, article: 제30조, source: null, verified_at: null }\n");
+    expect(errorOf(yaml)).toMatch(/source\(law\.go\.kr 주소\)와 verified_at/);
+  });
+
+  it("확인됨: article + source + verified_at", () => {
+    const yaml = privacy("  principle: { law: 법, article: 제30조, source: 'https://www.law.go.kr/x', verified_at: '2026-11-28' }\n");
+    expect(parse(yaml)[0]!.principle?.verified_at).toBe("2026-11-28");
+  });
+});
+
 describe("parseServices", () => {
   it("이름과 대응 정보", () => {
     expect(parseServices("- name: OpenAI\n  packages: [openai]")).toEqual([{ name: "OpenAI", packages: ["openai"] }]);

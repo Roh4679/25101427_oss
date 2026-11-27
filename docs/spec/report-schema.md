@@ -18,6 +18,7 @@ interface Report {
   };
   results: Result[];               // 지식 베이스 순서대로, N/A 포함
   checklist?: ChecklistAnswer[];   // checklist 명령 결과가 있으면 첨부
+  knowledge: { unverified: string[] };  // 적용된 의무 중 조문 미확인(article = TODO-확인필요)인 id (evidence-dsl.md 9장)
   disclaimer: string;
 }
 
@@ -40,7 +41,14 @@ interface Result {
   naReason?: "trigger" | "disabled" | "mode" | "dependency";  // dependency: 상위 의무(depends_on)가 pass가 아님
   message?: string;                // 통과가 아니면 YAML의 message
   fix?: string;
-  principle?: { law: string; article: string; source: string; verified_at: string };
+  principle?: {
+    law: string;
+    article: string;                 // 미확인이면 "TODO-확인필요"
+    source: string | null;           // 확인한 law.go.kr 주소
+    verified_at: string | null;      // 사람이 원문으로 확인한 날짜
+    references?: { candidate: string; basis: string; note?: string }[];  // 2차 자료 후보
+  };
+  technicalReference?: { name: string; item: string }[];
   configPage?: {                   // 설정 파일 pages로 판정한 경우 (evidence-dsl.md 3.5)
     url: string;
     verified: boolean;             // false면 리포트에 "설정으로 지정됨(미검증)"
@@ -140,7 +148,8 @@ interface Finding {
 ```
 
 - 등급 표시: critical `[치명]`, high `[높음]`, medium `[보통]`, low `[낮음]`.
-- `근거`는 `principle`이 있을 때만: `law` `article` (확인일 `verified_at`).
+- `근거`는 `principle`이 있을 때만: 확인됨이면 `law` `article` (확인일 `verified_at`), 미확인이면 `law` — 조문 확인 전.
+- 면책 문구 앞에 `조문 미확인 의무 N개: …`를 쓴다 (`knowledge.unverified`가 비어 있지 않을 때).
 - 기획서 5.5의 `→ AI 수정 프롬프트: vibe-signoff fix --rule …` 줄은 `fix` 명령이 생기는 8단계에서 넣는다.
 - 사용자에게 보이는 Fact 값(폼 필드 종류, 분석 도구 이름 등)은 `knowledge/kr/labels.yaml`의 표시 이름으로 바꿔 보여 준다 (`evidence-dsl.md` 7장).
 

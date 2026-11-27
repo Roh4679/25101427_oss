@@ -5,6 +5,7 @@ import { parseKnowledge } from "./loader.js";
 export const TEST_KB_YAML = String.raw`
 - id: privacy/policy-page
   category: privacy
+  principle: { law: 테스트 법령, article: TODO-확인필요, source: null, verified_at: null }
   check: auto
   factors: { L: 3, I: 2, P: 3 }
   trigger: collects_personal_info
@@ -16,6 +17,7 @@ export const TEST_KB_YAML = String.raw`
 
 - id: privacy/policy-contents
   category: privacy
+  principle: { law: 테스트 법령, article: TODO-확인필요, source: null, verified_at: null }
   check: semi
   factors: { L: 3, I: 2, P: 2 }
   trigger: collects_personal_info
@@ -30,6 +32,7 @@ export const TEST_KB_YAML = String.raw`
 
 - id: privacy/overseas-transfer
   category: privacy
+  principle: { law: 테스트 법령, article: TODO-확인필요, source: null, verified_at: null }
   check: semi
   factors: { L: 3, I: 2, P: 2 }
   trigger: { all: [collects_personal_info, overseas_services] }
@@ -44,6 +47,7 @@ export const TEST_KB_YAML = String.raw`
 
 - id: privacy/analytics-disclosure
   category: privacy
+  principle: { law: 테스트 법령, article: TODO-확인필요, source: null, verified_at: null }
   check: auto
   factors: { L: 3, I: 2, P: 2 }
   trigger: analytics_scripts
@@ -58,6 +62,7 @@ export const TEST_KB_YAML = String.raw`
 
 - id: privacy/consent-checkbox
   category: privacy
+  principle: { law: 테스트 법령, article: TODO-확인필요, source: null, verified_at: null }
   check: auto
   factors: { L: 3, I: 2, P: 3 }
   trigger: collects_personal_info
@@ -69,6 +74,7 @@ export const TEST_KB_YAML = String.raw`
 
 - id: privacy/cookie-consent
   category: privacy
+  principle: { law: 테스트 법령, article: TODO-확인필요, source: null, verified_at: null }
   check: semi
   factors: { L: 2, I: 2, P: 3 }
   trigger: analytics_scripts
@@ -83,6 +89,7 @@ export const TEST_KB_YAML = String.raw`
 
 - id: privacy/cookie-before-consent
   category: privacy
+  principle: { law: 테스트 법령, article: TODO-확인필요, source: null, verified_at: null }
   check: auto
   factors: { L: 2, I: 2, P: 3 }
   trigger: analytics_scripts
@@ -94,6 +101,7 @@ export const TEST_KB_YAML = String.raw`
 
 - id: commerce/business-info
   category: commerce
+  principle: { law: 테스트 법령, article: TODO-확인필요, source: null, verified_at: null }
   check: semi
   factors: { L: 3, I: 2, P: 3 }
   trigger: payment_sdks
@@ -112,6 +120,7 @@ export const TEST_KB_YAML = String.raw`
 
 - id: commerce/refund-policy
   category: commerce
+  principle: { law: 테스트 법령, article: TODO-확인필요, source: null, verified_at: null }
   check: semi
   factors: { L: 3, I: 2, P: 3 }
   trigger: payment_sdks

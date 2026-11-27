@@ -66,7 +66,8 @@ function itemLines(r: Result, head: string): string[] {
     out.push(`${indent}새로 만들 처리방침에 포함할 항목:`);
     for (const t of todo) out.push(`${indent}  - ${t.item}`);
   }
-  if (r.principle) out.push(`${indent}근거: ${r.principle.law} ${r.principle.article} (확인일 ${r.principle.verified_at})`);
+  const p = r.principle;
+  if (p) out.push(`${indent}근거: ${p.verified_at ? `${p.law} ${p.article} (확인일 ${p.verified_at})` : `${p.law} — 조문 확인 전`}`);
   out.push(`${indent}가중치 근거: L${r.factors.L} × I${r.factors.I} × P${r.factors.P} = ${r.risk}`);
   if (r.mitigated) out.push(`${indent}\`--live\`로 다시 확인하거나 \`confirmations\`에 확인 결과를 적으세요.`);
   return out;
@@ -111,6 +112,8 @@ export function renderTerminal(report: Report): string {
   }
   if (report.results.length === 0) lines.push("", "  적용된 검사 항목이 없습니다 (지식 베이스가 비어 있음).");
 
+  const unverifiedIds = report.knowledge.unverified;
+  if (unverifiedIds.length > 0) lines.push("", `  조문 미확인 의무 ${unverifiedIds.length}개: ${unverifiedIds.join(", ")}`);
   lines.push("", `  ※ ${report.disclaimer}`, "");
   return lines.join("\n");
 }

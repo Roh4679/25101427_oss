@@ -181,7 +181,8 @@ trace: ["개인정보처리방침", "privacy policy"]   # any_of와 같은 원�
 | `privacy/cookie-before-consent` | PRIV-06 동의 전 쿠키 | privacy | auto | 2·2·3 | `analytics_scripts` + `scan_mode = live` | — | 6 |
 | `commerce/business-info` | COM-01 | commerce | semi | 3·2·3 | `payment_sdks` | — | 7 |
 | `commerce/refund-policy` | COM-02 | commerce | semi | 3·2·3 | `payment_sdks` | — | 7 |
-| `legal/terms-page` | LEGAL-01 | ux (운영) | auto | 1·2·3 | 항상 | — | 4 |
+| `commerce/terms-display` | LEGAL-01 (결제 시) | commerce | auto | 3·2·? (P는 7단계에서 확정) | `payment_sdks` | — | 7 |
+| `legal/terms-page` | LEGAL-01 (무료 서비스) | ux (운영) | auto | 1·2·3 | `{ not: payment_sdks }` | — | 4 |
 | `advertising/unsupported-claims` | AD-01 | advertising | semi | 3·2·2 | 항상 | — | 7 |
 | `advertising/fake-reviews` | AD-02 | advertising | semi | 3·2·2 | `review_components` | — | 7 |
 | `accessibility/img-alt` | A11Y-01 | accessibility | auto | 2·1·3 | `img_missing_alt` | — | 4 |
@@ -191,6 +192,10 @@ trace: ["개인정보처리방침", "privacy policy"]   # any_of와 같은 원�
 | `ux/button-labels` | UX-01 | ux | semi | 1·1·3 | 항상 | — | 7 |
 
 처리방침 본문을 보는 의무는 모두 `privacy/policy-page`에 의존한다 (3.4).
+
+**약관 의무 분리**: 결제 기능이 있으면 전자상거래법상 사이버몰 이용약관 표시 의무로 `commerce/terms-display`(법적 의무, `principle` 필수)를 적용하고, 결제가 없는 무료 서비스에는 `legal/terms-page`를 운영 권고(L1, `principle` 생략)로 적용한다. 둘은 동시에 적용되지 않는다. 약관은 연결 화면(링크)으로 표시해도 된다.
+
+`privacy/embed-disclosure`는 근거 조문이 불명확해 L2로 두고 `TODO-확인필요`를 유지한다. 추적형 임베드를 `privacy/analytics-disclosure`에 합칠지는 검토 중이다.
 
 `privacy/policy-contents`, `privacy/overseas-transfer`는 기획서 5.2 표에 따로 없어 4.2 예시 값(3·2·2)을 따랐다.
 
@@ -301,4 +306,29 @@ analytics_scripts.vendor:
 ## 8. 메시지 필수 규칙
 
 `fail`·`needs_review`가 될 수 있는 의무에는 `message`와 `fix`가 **반드시** 있어야 한다. 없으면 로더 스키마 오류. 모든 증거 유형이 실패할 수 있으므로, 사실상 모든 의무에 필요하다.
+
+## 9. 법적 근거 `principle`
+
+```yaml
+principle:
+  law: 개인정보 보호법
+  article: TODO-확인필요          # 사람이 law.go.kr 원문으로 확인하기 전에는 이 값
+  source: null                    # 확인한 law.go.kr 원문 주소
+  verified_at: null               # 사람이 law.go.kr 원문으로 확인한 날짜 (YYYY-MM-DD)
+  references:                     # 2차 자료에서 본 조문 후보 (source가 아니다)
+    - candidate: 법 제30조, 시행령 제31조
+      basis: 개인정보보호위원회 안내, 법무법인 자료 (2차 자료)
+      note: 2026.3.10 개정(법률 제21445호, 2026.9.11 시행)으로 항·호 번호가 바뀌었을 수 있음
+technical_reference:              # 법령이 아닌 기술 기준 (principle 밖, 선택)
+  - name: 한국형 웹 콘텐츠 접근성 지침(KWCAG)
+    item: TODO-확인필요
+```
+
+- **필수 영역**: `privacy`, `commerce`, `advertising`, `accessibility`. `security`, `ux`는 선택. 없으면 로더 오류.
+- **확인 상태는 두 값이 함께 움직인다.**
+  - 미확인: `article: TODO-확인필요`, `source: null`, `verified_at: null`
+  - 확인됨: `article`에 조문, `source`에 law.go.kr 주소, `verified_at`에 날짜
+  - 하나만 채워지면(예: `article`은 TODO인데 `verified_at`에 날짜) 로더 오류.
+- `verified_at`은 **사람이 law.go.kr 원문으로 확인한 날짜만** 뜻한다. 2차 자료는 `references`에만 적는다.
+- 리포트에는 적용된 의무 중 조문 미확인 의무 목록을 남긴다 (`report-schema.md` `knowledge.unverified`). 터미널에는 "조문 미확인 의무 N개"로, 근거 줄에는 "조문 확인 전"으로 보인다.
 

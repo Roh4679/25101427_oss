@@ -53,6 +53,7 @@ export function buildResults(obligations: Obligation[], evals: ReadonlyMap<strin
       confirmed: false,
       findings: [],
       ...(o.principle ? { principle: o.principle } : {}),
+      ...(o.technical_reference ? { technicalReference: o.technical_reference } : {}),
     };
     const confirmation = config.confirmations?.[o.id];
 

@@ -5,13 +5,26 @@ import { UserError } from "../config.js";
 import { FACT_KEYS } from "../facts.js";
 import { gradeOf } from "../score/index.js";
 import { regexesOf, type PatternItem } from "./normalize.js";
-import { knowledgeFileSchema, type Condition, type Evidence, type Obligation } from "./schema.js";
+import { ARTICLE_TODO, knowledgeFileSchema, type Condition, type Evidence, type Obligation } from "./schema.js";
 
 export class KnowledgeError extends UserError {}
 
 // 서비스 대응표처럼 의무 목록이 아닌 데이터 파일
 const DATA_FILES = new Set(["services.yaml", "labels.yaml"]);
 const FORBIDDEN_WORDS = /위법|불법|위반입니다/;
+// principle이 반드시 있어야 하는 영역 (evidence-dsl.md 9장)
+const LEGAL_CATEGORIES = new Set(["privacy", "commerce", "advertising", "accessibility"]);
+
+function checkPrinciple(o: Obligation): string[] {
+  const p = o.principle;
+  if (!p) return LEGAL_CATEGORIES.has(o.category) ? [`${o.category} 영역은 principle(law, article, source, verified_at)이 필요합니다`] : [];
+  const todo = p.article === ARTICLE_TODO;
+  if (todo && (p.verified_at !== null || p.source !== null))
+    return ["article이 TODO-확인필요면 source와 verified_at은 null이어야 합니다 (사람이 law.go.kr 원문으로 확인한 뒤 채웁니다)"];
+  if (!todo && (p.verified_at === null || p.source === null))
+    return ["article을 채웠으면 source(law.go.kr 주소)와 verified_at(원문 확인 날짜)도 채워야 합니다"];
+  return [];
+}
 
 export const isLiveOnly = (o: Obligation) => o.evidence.every((e) => e.mode === "live");
 
@@ -84,6 +97,8 @@ function checkObligation(o: Obligation): string[] {
       errors.push(`잘못된 정규식: ${re}`);
     }
   }
+
+  errors.push(...checkPrinciple(o));
 
   // 모든 증거 유형이 실패할 수 있으므로 모든 의무에 필요하다 (evidence-dsl.md 8장)
   if (!o.message) errors.push("message가 필요합니다 (실패·확인 필요일 때 보여 줄 설명)");
