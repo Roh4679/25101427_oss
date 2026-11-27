@@ -17,9 +17,9 @@ vibe-signoff(MIT)가 사용하거나 참고한 외부 오픈소스를 모두 적
 | typescript-eslint | 8.74.0 | MIT | `eslint.config.js` TypeScript 규칙 | 개발용 | `422c5fe` |
 | tsx | 4.23.15 | MIT | `npm run dev`, `npm run demo` (TypeScript 바로 실행) | 개발용 | `422c5fe` |
 | vitest | 5.1.2 | MIT | 단위·골든 테스트 | 개발용 | `422c5fe` (4.1.12), `91a19f1` (5로 올림) |
-| playwright | 1.65.1 | Apache-2.0 | `--live` 렌더링 검사 (`src/rules/live/`). `--live`일 때만 동적 import | **선택 설치** (optional peer dependency). 저장소에서는 테스트용 devDependency | 6단계 커밋 `feat(live): ...` (이 행을 추가한 커밋) |
-| @axe-core/playwright | 4.14.1 | MPL-2.0 | 색 대비·접근성 요약 (`src/rules/live/crawl.ts`). 수정 없이 사용 | **선택 설치** (optional peer dependency). 테스트용 devDependency | 6단계 커밋 (위와 같음) |
-| axe-core | 4.14.1 | MPL-2.0 | @axe-core/playwright의 의존성. 수정 없이 사용 | 선택 설치 (간접) | 6단계 커밋 (위와 같음) |
+| playwright | 1.65.1 | Apache-2.0 | `--live` 렌더링 검사 (`src/rules/live/`). `--live`일 때만 동적 import | **선택 설치** (optional peer dependency). 저장소에서는 테스트용 devDependency | `22b023a` |
+| @axe-core/playwright | 4.14.1 | MPL-2.0 | 색 대비·접근성 요약 (`src/rules/live/crawl.ts`). 수정 없이 사용 | **선택 설치** (optional peer dependency). 테스트용 devDependency | `22b023a` |
+| axe-core | 4.14.1 | MPL-2.0 | @axe-core/playwright의 의존성. 수정 없이 사용 | 선택 설치 (간접) | `22b023a` |
 
 - 저장소 기록에 있는 `f1e8a6b`(2026-11-25)는 이 저장소에 있던 **이전 프로젝트**의 커밋이다 (`7e41cd5`에서 교체). vibe-signoff의 도입 커밋이 아니다.
 - 버전 선택 이유: 최소 Node는 22.12 (`engines`). typescript-eslint 8.74가 TypeScript 6.1 미만만 지원해 TypeScript는 6.0을 쓴다.
@@ -49,7 +49,7 @@ GPL 계열은 없다. 기본 설치(런타임)에 함께 설치되는 패키지�
 | gitignore 문법 (Git 문서 `gitignore(5)`) | GPL-2.0 (문서) | 패턴 규칙 (`!`, 끝 `/`, 앞 `/`, `**`)의 동작 | `src/scanner/gitignore.ts`를 직접 작성. 문서 내용·코드를 복사하지 않음 | `250abe3` |
 | PostgreSQL·Supabase RLS SQL 문법 | PostgreSQL License (문서) | `create table`, `alter table ... enable row level security`, `create policy ... using (...)` 문법 | `src/rules/static/database.ts` 정규식을 직접 작성 | `250abe3`, `5ba89fa` |
 | Firebase 보안 규칙 문법 | 공개 문서 | `allow read, write: if ...`, `".read": true` | `src/rules/static/database.ts` | `250abe3` |
-| 추적 쿠키 이름 (`_ga`, `_gid`, `_fbp`, `mp_*_mixpanel` 등) | 각 서비스의 공개 안내 | 쿠키 이름 | `knowledge/kr/services.yaml` `tracking_cookies` | 6단계 커밋 |
+| 추적 쿠키 이름 (`_ga`, `_gid`, `_fbp`, `mp_*_mixpanel` 등) | 각 서비스의 공개 안내 | 쿠키 이름 | `knowledge/kr/services.yaml` `tracking_cookies` | `22b023a` |
 
 ## 3. 탐지 패턴의 출처 확인
 
