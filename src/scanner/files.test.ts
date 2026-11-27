@@ -36,4 +36,10 @@ describe("collectFiles", () => {
     expect(files.find((f) => f.path === "logo.png")?.content).toBeUndefined();
     expect(files.find((f) => f.path === ".env")?.content).toBe("A=1");
   });
+
+  it(".gitignore 내용도 읽는다 (git 없을 때 무시 규칙 해석용)", () => {
+    const root = mkdtempSync(join(tmpdir(), "vs-files-"));
+    writeFileSync(join(root, ".gitignore"), ".env*\n");
+    expect(collectFiles(root).find((f) => f.path === ".gitignore")?.content).toBe(".env*\n");
+  });
 });

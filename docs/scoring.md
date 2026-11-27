@@ -248,3 +248,21 @@
 | T77 | `.gitignore`에 `.env`, `.env`는 add하지 않음 → commit (ignore된 .env) | `git_tracked`에 없음, `gitignored`에 있음 → 정상 |
 | T78 | `.gitignore` 없음, `.env`는 add하지 않음 → 다른 파일만 commit (ignore 안 됐지만 추적 안 된 .env) | `git_tracked`에 없음, `gitignored`에 없음 → reason `not_ignored` → 차단 |
 | T79 | T77과 같지만 스캔 루트가 저장소 하위 폴더 | 경로가 스캔 루트 기준으로 바뀌어 같은 결과 |
+
+**DB 접근 권한 (`security/db-access`, 5단계)** — 치명(2·3·3), `trace` 없음 → 관찰된 사실로 판정
+
+| # | 입력 | 기대 결과 |
+|---|---|---|
+| T80 | 마이그레이션 SQL에 `create table public.posts`, RLS 활성화 없음 | `fail` 확실 → 차단, 위치는 `create table` 줄 |
+| T81 | SQL에 테이블 + `enable row level security` + 정책 (fixture `clean-app`) | `pass` |
+| T82 | 마이그레이션 SQL 없음, 코드에서 `supabase.from("posts")` 사용 | `needs_review` 0.5, `mitigated`, 차단 없음. 메시지 "Supabase 대시보드에서 테이블의 RLS가 켜져 있는지 확인하세요" |
+| T83 | 클라이언트 파일(`"use client"`)에서 `SUPABASE_SERVICE_ROLE_KEY` 사용 | `fail` 확실 → 차단 |
+| T84 | `NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY` 변수 이름 | `fail` → 차단 |
+| T85 | 서버 파일(`app/api/x/route.ts`)에서 `SUPABASE_SERVICE_ROLE_KEY` 사용 | `pass` |
+| T86 | SQL 없음, `.from()` 없음 (인증만 사용) | `pass` |
+| T87 | 첫 마이그레이션은 RLS 없음, 다음 파일에서 `enable row level security` | `pass` |
+| T88 | `enable` 뒤 다른 파일에서 `disable row level security` | `fail` → 차단 |
+| T89 | `firestore.rules`에 `allow read, write: if true;` | `fail` → 차단 |
+
+RLS만 켜고 정책이 없는 테이블은 아무도 접근할 수 없어 안전하므로 `pass`로 본다 (정책 유무는 따로 보지 않는다).
+

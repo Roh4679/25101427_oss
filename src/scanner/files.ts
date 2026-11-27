@@ -12,7 +12,7 @@ const TEXT_EXTS = new Set([
 
 const MAX_TEXT_BYTES = 1024 * 1024;
 
-const isText = (name: string) => TEXT_EXTS.has(extname(name).toLowerCase()) || name.startsWith(".env");
+const isText = (name: string) => TEXT_EXTS.has(extname(name).toLowerCase()) || name.startsWith(".env") || name === ".gitignore";
 
 // `**` 는 여러 폴더, `*` 는 폴더 하나 안, `?` 는 한 글자
 export function globToRegExp(glob: string): RegExp {

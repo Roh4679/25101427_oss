@@ -54,7 +54,8 @@ trigger:
 | `text_contains` | `{ fact, field?, any_of \| all_of }` | 대상 텍스트(문자열 Fact, 또는 배열 원소의 `field`)를 이어 붙여 검사. 판정은 `page_text_contains`와 같음 |
 | `text_absent` | `{ fact, field?, any_of, exact? }` | 배열 원소의 `field` 값에 단어가 **하나도 없으면** pass. `exact: true`면 부분 일치가 아니라 정규화 후 완전 일치. 걸린 원소마다 Finding |
 | `every` | `{ fact, field }` | 배열의 모든 원소에서 `field`가 참이면 pass |
-| `none` | `{ fact, field }` | 배열의 어떤 원소에서도 `field`가 참이 아니면 pass |
+| `none` | `{ fact, field, in? }` | 배열의 어떤 원소에서도 `field`가 참이 아니면 pass. `in: [값...]`을 주면 "`field` 값이 목록에 든 원소가 없으면" pass. 걸린 원소마다 Finding |
+| `review_if` | `{ when: 조건, message }` | `when`(trigger와 같은 조건 문법)이 참이면 **unknown**(확인 필요), 아니면 pass. Finding 메시지는 `message`. 사실만으로는 판정할 수 없을 때 쓴다 (예: SQL 없이 대시보드로 만든 테이블) |
 | `any` | `[증거...]` | 하위 증거 중 가장 좋은 결과 (OR) |
 
 - `any_of`·`all_of`의 원소는 문자열, **동의어 배열**, 또는 `{ regex: "..." }`이다. `all_of: [["처리목적", "이용목적"], "보호책임자"]` 는 항목 2개다. 동의어 배열 안에도 `{ regex }`를 섞을 수 있다. 정규식은 **정규화한 텍스트**에 적용한다 (공백이 없어진 상태).

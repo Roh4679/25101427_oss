@@ -26,7 +26,7 @@ for (const dir of fixtureDirs.filter((d) => existsSync(join(d, "expected.json"))
   const expected = expectedSchema.parse(JSON.parse(readFileSync(join(dir, "expected.json"), "utf8")));
   if (expected.options.mode === "live") continue; // --live는 6단계
 
-  const { report } = scan(dir, {}, { network: expected.options.network, region: expected.options.region });
+  const { report } = scan(dir, {}, { network: expected.options.network, region: expected.options.region, git: false });
   const actual = new Map(report.results.map((r) => [r.id, r.status]));
   const ids = Object.keys(expected.results);
   const skipped = ids.filter((id) => !actual.has(id));

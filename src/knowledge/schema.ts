@@ -38,7 +38,8 @@ export type Evidence = Mode &
     | { text_contains: { fact: string; field?: string } & TextMatch }
     | { text_absent: { fact: string; field?: string; any_of: ItemsOrTrace; exact?: boolean } }
     | { every: { fact: string; field: string } }
-    | { none: { fact: string; field: string } }
+    | { none: { fact: string; field: string; in?: unknown[] } }
+    | { review_if: { when: Condition; message: string } }
     | { any: Evidence[] }
   );
 
@@ -62,7 +63,8 @@ export const evidenceSchema: z.ZodType<Evidence> = z.lazy(() =>
     ev("text_contains", textMatch({ fact: factRef, field: z.string().optional() })),
     ev("text_absent", z.object({ fact: factRef, field: z.string().optional(), any_of: itemsOrTrace, exact: z.boolean().optional() }).strict()),
     ev("every", z.object({ fact: factRef, field: z.string() }).strict()),
-    ev("none", z.object({ fact: factRef, field: z.string() }).strict()),
+    ev("none", z.object({ fact: factRef, field: z.string(), in: z.array(z.unknown()).min(1).optional() }).strict()),
+    ev("review_if", z.object({ when: conditionSchema, message: z.string().min(1) }).strict()),
     ev("any", z.array(evidenceSchema).min(1)),
   ]),
 ) as z.ZodType<Evidence>;

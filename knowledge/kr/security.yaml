@@ -1,0 +1,49 @@
+# 보안 의무 (docs/spec/evidence-dsl.md 4장). 법적 의무가 아니라 principle은 생략한다 (security 영역은 선택).
+# trace가 없으므로 실패는 관찰된 사실로만 판정한다 → 치명 항목은 실패하면 차단 (scoring.md 4장).
+
+- id: security/secret-exposure
+  category: security
+  check: auto
+  # L2: 법 조문보다 보안 관행 / I3: 키 도용·금전 피해 / P3: 바이브코딩에서 흔함 (기획서 5.2 SEC-01)
+  factors: { L: 2, I: 3, P: 3 }
+  evidence:
+    # git에 올라간 .env, 또는 .gitignore가 무시하지 않는 .env (facts.md 6장 git 추적 규칙)
+    - falsy: env_files_exposed
+    # 소스에 직접 쓴 키, 클라이언트로 나가는 변수(NEXT_PUBLIC_·VITE_)의 비밀값
+    - none: { fact: secrets_exposed, field: via, in: [hardcoded, public_env] }
+  message: API 키·비밀값이 노출될 수 있는 곳에 있습니다.
+  fix: >-
+    키를 즉시 폐기하고 새로 발급하세요. 비밀값은 서버 전용 환경 변수(NEXT_PUBLIC_·VITE_ 접두사 없이)에 두고,
+    .env는 .gitignore에 넣으세요. 이미 git에 올라갔다면 git rm --cached .env 후 커밋하고, 히스토리에서도 지우세요.
+
+- id: security/db-access
+  category: security
+  check: auto
+  # L2: 보안 관행 / I3: 데이터 유출 / P3: RLS를 끈 채 배포하는 경우가 흔함 (기획서 5.2 SEC-02)
+  factors: { L: 2, I: 3, P: 3 }
+  trigger: { any: [uses_supabase, uses_firebase] }
+  evidence:
+    - falsy: supabase_tables_without_rls
+    - falsy: service_role_in_client
+    - falsy: firebase_open_rules
+    # 대시보드에서 만든 테이블은 SQL이 없어 확인할 수 없다 → 확인 필요 (차단하지 않음)
+    - review_if:
+        when: { all: [supabase_from_calls, { not: supabase_migrations }] }
+        message: 마이그레이션 SQL이 없어 RLS를 확인하지 못했습니다. Supabase 대시보드에서 테이블의 RLS가 켜져 있는지 확인하세요.
+  message: 데이터베이스가 누구나 읽고 쓸 수 있게 열려 있을 수 있습니다.
+  fix: >-
+    Supabase는 모든 public 테이블에 alter table ... enable row level security를 실행하고 정책을 만드세요.
+    service_role 키는 서버 코드에서만 쓰세요. Firebase 규칙의 if true를 인증 조건으로 바꾸세요.
+    대시보드에서 직접 확인했다면 confirmations에 "security/db-access": "pass"를 적으세요.
+
+- id: security/dangerous-patterns
+  category: security
+  check: semi
+  # L2: 보안 관행 / I3: XSS·데이터 유출 / P2: 가끔 발생 (기획서 5.2 SEC-03)
+  factors: { L: 2, I: 3, P: 2 }
+  evidence:
+    - falsy: dangerous_patterns
+  message: 위험할 수 있는 코드 패턴(eval, dangerouslySetInnerHTML, CORS *, 인증 확인 없는 API)이 있습니다.
+  fix: >-
+    eval은 쓰지 말고, HTML을 넣어야 하면 DOMPurify 등으로 정리하세요. CORS는 허용할 주소만 적고,
+    API 라우트에서는 로그인 여부를 먼저 확인하세요. 의도한 코드라면 confirmations에 "security/dangerous-patterns": "pass"를 적으세요.

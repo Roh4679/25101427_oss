@@ -152,11 +152,18 @@ function evalEvidence(ctx: Ctx, e: Evidence): Step | "skip" {
     );
     return hits.length === 0 ? step("pass", 1) : step("fail", 0, ["text_present"], hits.map(ctx.finding));
   }
+  if ("review_if" in e) {
+    // 사실만으로는 판정할 수 없는 경우: 사람이 확인해야 한다
+    if (!evalCondition(e.review_if.when, facts)) return step("pass", 1);
+    return step("unknown", 0, ["needs_review"], [{ message: e.review_if.message, fix: ctx.o.fix ?? "" }]);
+  }
   if ("every" in e || "none" in e) {
     const isEvery = "every" in e;
     const { fact, field } = isEvery ? e.every : e.none;
+    const list = "none" in e ? e.none.in?.map((x) => JSON.stringify(x)) : undefined;
     const bad = asArray(facts.get(fact)).filter((el) => {
       const vs = pluck(el, splitPath(field));
+      if (list) return vs.some((v) => list.includes(JSON.stringify(v)));
       return isEvery ? !(vs.length > 0 && vs.every(isTruthy)) : vs.some(isTruthy);
     });
     return bad.length === 0 ? step("pass", 1) : step("fail", 0, [isEvery ? "not_every" : "some_present"], bad.map(ctx.finding));

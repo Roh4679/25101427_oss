@@ -15,6 +15,11 @@ import { formsDetector } from "./rules/static/forms.js";
 import { imagesDetector } from "./rules/static/images.js";
 import { scriptsDetector } from "./rules/static/scripts.js";
 import { textDetector } from "./rules/static/text.js";
+import { databaseDetector } from "./rules/static/database.js";
+import { patternsDetector } from "./rules/static/patterns.js";
+import { secretsDetector } from "./rules/static/secrets.js";
+import { readGit } from "./adapters/git.js";
+import { gitignoreMatcher } from "./scanner/gitignore.js";
 import { summarize } from "./score/index.js";
 import { buildResults } from "./score/results.js";
 import type { Fact, Report, Result } from "./types.js";
@@ -47,6 +52,7 @@ export const unverifiedArticles = (results: Result[]) =>
 export interface ScanOptions {
   network: boolean;
   region: "kr" | "global";
+  git?: boolean; // false면 git을 실행하지 않는다 (골든 테스트, facts.md 6장). 기본 true
 }
 
 export interface ScanOutput {
@@ -60,8 +66,20 @@ export function scan(root: string, config: Config, options: ScanOptions, kb: Kno
   const mode = "static" as const;
   const files = collectFiles(root, config.ignorePaths);
   const ctx = { root, files, mode };
-  const detectors = [projectDetector, servicesDetector(kb.services), routesDetector(config), textDetector, formsDetector, scriptsDetector, imagesDetector];
-  const facts = detectors.flatMap((d) => d.detect(ctx));
+  // git 추적·무시 정보: git이 있으면 git으로, 없으면 .gitignore를 직접 해석한다
+  const git = options.git === false ? undefined : readGit(root, files.map((f) => f.path));
+  const ignoredSet = git ? new Set(git.ignored) : undefined;
+  const ignored = ignoredSet ? (p: string) => ignoredSet.has(p) : gitignoreMatcher(files);
+  const gitFacts: Fact[] = [
+    ...(git ? [{ key: "git_tracked", value: git.tracked }] : []),
+    { key: "gitignored", value: files.map((f) => f.path).filter(ignored) },
+  ];
+
+  const detectors = [
+    projectDetector, servicesDetector(kb.services), routesDetector(config), textDetector, formsDetector, scriptsDetector, imagesDetector,
+    secretsDetector({ tracked: git?.tracked, ignored }), databaseDetector, patternsDetector,
+  ];
+  const facts = [...gitFacts, ...detectors.flatMap((d) => d.detect(ctx))];
 
   const factMap = new Map(facts.map((f) => [f.key, f.value]));
   const evals = new Map(kb.obligations.map((o) => [o.id, evaluate(o, factMap, mode, kb.labels)]));

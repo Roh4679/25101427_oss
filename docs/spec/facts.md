@@ -139,11 +139,17 @@ type FieldKind = "email" | "phone" | "name" | "birth" | "gender" | "address" | "
 | `env_files` | `{ path: string; gitignored: boolean; git_tracked: boolean \| null }[]` | `secrets` | `.env`, `.env.*` 파일 (`.env.example`, `.env.sample`, `.env.template` 제외). `git_tracked`가 없으면 `null` | 5 |
 | `env_files_exposed` | `{ reason: "tracked" \| "not_ignored" } & Loc[]` | `secrets` | `env_files` 중 `git_tracked: true`이거나 `gitignored: false`인 파일. 둘 다면 `tracked` | 5 |
 | `secrets_exposed` | `{ rule: string; masked: string; via: "hardcoded" \| "public_env" \| "env_file" } & Loc[]` | `secrets` / adapters/gitleaks | 비밀값 후보. `via`: `hardcoded` = 소스 코드에 직접 씀, `public_env` = 클라이언트에 노출되는 변수(`NEXT_PUBLIC_*`, `VITE_*`)에 비밀값, `env_file` = 그 밖의 `.env` 변수. `NEXT_PUBLIC_SUPABASE_ANON_KEY`, Firebase web `apiKey`처럼 **공개용으로 설계된 키는 제외** | 5 |
-| `supabase_tables_without_rls` | `{ table: string } & Loc[]` | `supabase` | 마이그레이션 SQL에서 `create table` 후 `enable row level security`가 없는 public 테이블 | 5 |
-| `service_role_in_client` | `Loc[]` | `supabase` | 클라이언트 번들 대상 파일에서 service_role 키·변수 사용 | 5 |
+| `supabase_migrations` | `string[]` | `supabase` | `supabase/` 아래 `.sql` 파일 경로 (경로순) | 5 |
+| `supabase_tables_without_rls` | `{ table: string } & Loc[]` | `supabase` | 마이그레이션 SQL에서 `create table` 후 `enable row level security`가 없는 public 테이블. 여러 파일이면 경로순으로 읽어 마지막 상태(`disable`이 뒤에 오면 꺼짐) | 5 |
+| `supabase_from_calls` | `Loc[]` | `supabase` | 코드에서 Supabase 클라이언트로 테이블을 읽고 쓰는 호출 (`.from("테이블")`). `@supabase/*`를 import하거나 `supabase` 식별자를 쓰는 파일만 | 5 |
+| `service_role_in_client` | `Loc[]` | `supabase` | 클라이언트 번들 대상 파일에서 service_role 키·변수 사용, 또는 `NEXT_PUBLIC_`·`VITE_` 변수 이름에 `SERVICE_ROLE` | 5 |
 | `firebase_open_rules` | `Loc[]` | `firebase` | `firestore.rules`, `storage.rules`, `database.rules.json`의 `if true` / `".read": true` | 5 |
 | `dangerous_patterns` | `{ kind: "eval" \| "dangerously_set_inner_html" \| "cors_wildcard" \| "unauth_api_route" } & Loc[]` | `patterns` / adapters/semgrep | 위험 패턴 위치 | 5 |
 
+
+클라이언트 번들 대상 파일 (`service_role_in_client`)
+- `"use client"`가 있는 파일, `components/**`, `pages/**`(`pages/api/**` 제외), Next.js가 아닌 프로젝트의 `src/**`·`.html`.
+- 서버 파일은 제외: `app/**/route.*`, `pages/api/**`, `"use server"`가 있는 파일, `*.server.*`, `supabase/functions/**`.
 
 git 추적 규칙
 - 파일 수집은 `.gitignore`와 상관없이 모든 파일을 읽는다. 무시 여부는 위 Fact로만 전달한다.

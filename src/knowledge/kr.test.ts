@@ -20,7 +20,7 @@ const POLICY_TEXT =
 const privacy = (text?: string): PageRoute => ({ path: "/privacy", source: "file-route", ...(text ? { text } : {}) });
 
 describe("knowledge/kr 항목별 통과·실패", () => {
-  it("로드되고, 4단계 의무 9개가 있다", () => {
+  it("로드되고, 4·5단계 의무 12개가 있다", () => {
     expect(KB.obligations.map((o) => o.id).sort()).toEqual([
       "accessibility/img-alt",
       "privacy/analytics-disclosure",
@@ -30,6 +30,9 @@ describe("knowledge/kr 항목별 통과·실패", () => {
       "privacy/overseas-transfer",
       "privacy/policy-contents",
       "privacy/policy-page",
+      "security/dangerous-patterns",
+      "security/db-access",
+      "security/secret-exposure",
       "ux/terms-page",
     ]);
   });
@@ -95,9 +98,31 @@ describe("knowledge/kr 항목별 통과·실패", () => {
     expect(r.findings[0]!.policyTodo?.map((t) => t.item)).toEqual(["수집 항목: 이메일", "분석 도구: Google Analytics 4", "쿠키 사용 사실과 거부 방법"]);
   });
 
-  it("법적 항목의 조문은 모두 미확인(TODO)이고 references가 있다, 약관은 principle 없음", () => {
+  it("security/secret-exposure: 통과 / 실패(노출된 .env, 하드코딩 키) — 확실한 실패라 차단", () => {
+    expect(status({ env_files_exposed: [], secrets_exposed: [{ via: "env_file" }] })["security/secret-exposure"]!.status).toBe("pass");
+    expect(status({ env_files_exposed: [{ reason: "tracked", file: ".env", line: 1 }] })["security/secret-exposure"]!.status).toBe("fail");
+    const r = status({ secrets_exposed: [{ rule: "openai-api-key", masked: "sk-p****", via: "hardcoded", file: "src/a.ts", line: 3 }] });
+    expect(r["security/secret-exposure"]).toMatchObject({ status: "fail", grade: "critical", findings: [{ location: { file: "src/a.ts", line: 3 } }] });
+  });
+
+  it("security/db-access: 통과 / 실패(RLS 없음) / 확인 필요(SQL 없이 .from()) / Supabase·Firebase 안 쓰면 N/A", () => {
+    const base = { uses_supabase: true, supabase_migrations: ["supabase/migrations/1.sql"] };
+    expect(status(base)["security/db-access"]!.status).toBe("pass");
+    expect(status({ ...base, supabase_tables_without_rls: [{ table: "posts", file: "x.sql", line: 1 }] })["security/db-access"]!.status).toBe("fail");
+    const review = status({ uses_supabase: true, supabase_migrations: [], supabase_from_calls: [{ file: "a.ts", line: 2 }] })["security/db-access"]!;
+    expect(review).toMatchObject({ status: "needs_review", score: 0.5, mitigated: true });
+    expect(review.findings[0]!.message).toContain("Supabase 대시보드에서 테이블의 RLS가 켜져 있는지 확인하세요");
+    expect(status({})["security/db-access"]!.status).toBe("na");
+  });
+
+  it("security/dangerous-patterns: 통과 / 확인 필요(semi)", () => {
+    expect(status({ dangerous_patterns: [] })["security/dangerous-patterns"]!.status).toBe("pass");
+    expect(status({ dangerous_patterns: [{ kind: "eval", file: "a.ts", line: 1 }] })["security/dangerous-patterns"]!.status).toBe("needs_review");
+  });
+
+  it("법적 항목의 조문은 모두 미확인(TODO)이고 references가 있다, 약관·보안은 principle 없음", () => {
     for (const o of KB.obligations) {
-      if (o.id === "ux/terms-page") expect(o.principle).toBeUndefined();
+      if (o.id === "ux/terms-page" || o.category === "security") expect(o.principle).toBeUndefined();
       else expect(o.principle, o.id).toMatchObject({ article: "TODO-확인필요", source: null, verified_at: null, references: expect.any(Array) });
     }
     const results = Object.values(status({ ...PERSONAL, pages: [privacy()] }));
